@@ -350,6 +350,25 @@
     transition: opacity .18s ease;
   }
   .card:hover .complete-overlay, .card:focus-within .complete-overlay{ opacity:1; pointer-events:auto; }
+
+  /* Touch devices have no :hover — show the action row as a normal, always-visible
+     footer instead of an overlay so it doesn't depend on a hover state that never fires. */
+  @media (hover: none){
+    .card{ padding-bottom: 18px; }
+    .complete-overlay{
+      position: static;
+      opacity: 1;
+      pointer-events: auto;
+      background: none;
+      padding: 12px 0 0 0;
+      margin-top: 12px;
+      border-top: 1px solid var(--border);
+      justify-content: flex-start;
+    }
+    .confirm-overlay{ position: static !important; border-top: none; margin-top: 12px; border-radius: 8px; padding: 12px 0; }
+    .btn-row{ padding: 0; }
+  }
+
   .btn-row{ display:flex; align-items:center; gap:8px; width:100%; padding: 0 16px; }
   .btn-row.single{ justify-content: center; }
   .complete-btn{
