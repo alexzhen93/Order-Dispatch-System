@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dispatch — Order Submission &amp; Fulfillment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #12161d;
+    --bg-grid: #171c25;
+    --surface: #1c222c;
+    --surface-raised: #262e3a;
+    --surface-hover: #2c3542;
+    --border: #323b49;
+    --border-soft: #262e3a;
+    --text-primary: #edeff3;
+    --text-muted: #8b93a3;
+    --text-faint: #5c6577;
+    --teal: #2dd4bf;
+    --teal-dim: rgba(45,212,191,0.14);
+    --amber: #f5a623;
+    --amber-dim: rgba(245,166,35,0.14);
+    --red: #e5484d;
+    --red-dim: rgba(229,72,77,0.14);
+    --green: #3ddc84;
+    --green-dim: rgba(61,220,132,0.14);
+    --font-display: 'Barlow Condensed', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+
+  *{ box-sizing: border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px, transparent 1px) 0 0 / 100% 28px,
+      var(--bg);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button{ font-family: inherit; cursor:pointer; }
+  input, textarea{ font-family: inherit; }
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    position: sticky; top:0; z-index: 20;
+    background: rgba(18,22,29,0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar-inner{
+    max-width: 980px; margin: 0 auto;
+    padding: 18px 24px 0 24px;
+  }
+  .brand{
+    display:flex; align-items:baseline; gap:10px;
+    margin-bottom: 14px;
+  }
+  .brand-mark{
+    width:10px; height:10px; border-radius:2px;
+    background: var(--amber);
+    box-shadow: 0 0 0 3px var(--amber-dim);
+  }
+  .brand h1{
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin:0;
+  }
+  .brand span{
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    letter-spacing: 0.05em;
+  }
+
+  .tabs{ display:flex; gap: 4px; }
+  .tab{
+    background: none; border: none;
+    color: var(--text-muted);
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    padding: 10px 4px 12px 4px;
+    margin-right: 26px;
+    border-bottom: 2px solid transparent;
+    display:flex; align-items:center; gap:8px;
+    transition: color .15s ease, border-color .15s ease;
+  }
+  .tab:hover{ color: var(--text-primary); }
+  .tab.active{ color: var(--text-primary); border-bottom-color: var(--amber); }
+  .tab .count{
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--surface-raised);
+    color: var(--text-muted);
+    border-radius: 999px;
+    padding: 2px 7px;
+    min-width: 18px;
+    text-align:center;
+  }
+  .tab.active .count{ background: var(--amber-dim); color: var(--amber); }
+  .tab.flash .count{ animation: pulseCount .5s ease 2; }
+  @keyframes pulseCount{
+    0%,100%{ transform: scale(1); }
+    50%{ transform: scale(1.35); background: var(--amber); color: #1a1206; }
+  }
+
+  /* ---------- Layout ---------- */
+  main{ max-width: 980px; margin: 0 auto; padding: 36px 24px 80px 24px; }
+  .view{ display:none; }
+  .view.active{ display:block; animation: fadeUp .35s ease; }
+  @keyframes fadeUp{
+    from{ opacity:0; transform: translateY(6px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+
+  /* ---------- Home / intake ticket ---------- */
+  .intake-wrap{ display:flex; justify-content:center; padding-top: 16px; }
+  .ticket{
+    width: 100%; max-width: 460px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 20px 50px -20px rgba(0,0,0,0.6);
+  }
+  .ticket::before{
+    content:"";
+    position:absolute; top:0; left:0; right:0; height:5px;
+    background: repeating-linear-gradient(90deg, var(--amber) 0 14px, transparent 14px 22px);
+    opacity:.85;
+  }
+  .ticket-head{
+    padding: 26px 28px 18px 28px;
+    border-bottom: 1px dashed var(--border);
+  }
+  .ticket-head .eyebrow{
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin: 0 0 6px 0;
+  }
+  .ticket-head h2{
+    font-family: var(--font-display);
+    font-size: 30px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: 0.01em;
+  }
+  .ticket-body{ padding: 24px 28px 28px 28px; }
+
+  .field{ margin-bottom: 20px; }
+  .field label{
+    display:block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .field input[type=text], .field textarea{
+    width:100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-primary);
+    padding: 12px 14px;
+    font-size: 15px;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .field input[type=text]{
+    font-family: var(--font-mono);
+    font-size: 18px;
+    letter-spacing: 0.03em;
+  }
+  .field textarea{ resize: vertical; min-height: 72px; line-height:1.5; }
+  .field input:focus, .field textarea:focus{
+    outline:none;
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px var(--teal-dim);
+  }
+  .field .hint{ font-size:12px; color: var(--red); margin-top:6px; display:none; }
+  .field.error input{ border-color: var(--red); box-shadow: 0 0 0 3px var(--red-dim); }
+  .field.error .hint{ display:block; }
+  .field.shake{ animation: shakeField .4s ease; }
+  @keyframes shakeField{
+    0%, 100%{ transform: translateX(0); }
+    20%{ transform: translateX(-6px); }
+    40%{ transform: translateX(5px); }
+    60%{ transform: translateX(-4px); }
+    80%{ transform: translateX(3px); }
+  }
+
+  .check-row{ display:flex; gap: 12px; margin-bottom: 24px; }
+  .check-pill{
+    flex:1;
+    display:flex; align-items:center; gap:10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 13px 14px;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .check-pill input{ accent-color: var(--teal); width:16px; height:16px; }
+  .check-pill.urgent input{ accent-color: var(--amber); }
+  .check-pill label{ font-size: 14px; font-weight: 600; cursor:pointer; user-select:none; }
+  .check-pill.checked{ border-color: var(--teal); background: var(--teal-dim); }
+  .check-pill.urgent.checked{ border-color: var(--amber); background: var(--amber-dim); }
+  @media (max-width: 460px){
+    .check-row{ flex-wrap: wrap; }
+    .check-pill{ min-width: calc(50% - 6px); }
+  }
+
+  .submit-btn{
+    width:100%;
+    background: var(--amber);
+    color: #1a1206;
+    border: none;
+    border-radius: 8px;
+    padding: 15px;
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: transform .1s ease, filter .15s ease;
+  }
+  .submit-btn:hover{ filter: brightness(1.08); }
+  .submit-btn:active{ transform: scale(0.98); }
+
+  /* ---------- Board (Pickup/Delivery + Completed) ---------- */
+  .board-head{ display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:20px; }
+  .board-head h2{
+    font-family: var(--font-display);
+    font-size: 26px; font-weight:700; margin:0;
+    text-transform: uppercase; letter-spacing:0.02em;
+  }
+  .board-head .sub{ font-size:13px; color: var(--text-muted); }
+  .board-head-right{ display:flex; align-items:center; gap:16px; }
+
+  .clear-all-btn{
+    display:flex; align-items:center; gap:7px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 7px;
+    padding: 8px 14px;
+    font-size: 12px; font-weight:600; letter-spacing:0.03em; text-transform:uppercase;
+    transition: border-color .15s ease, color .15s ease, background .15s ease;
+  }
+  .clear-all-btn:hover{ border-color: var(--red); color: var(--red); background: var(--red-dim); }
+  .clear-all-btn:disabled{ opacity:.4; pointer-events:none; }
+
+  .clear-confirm{
+    display:none;
+    align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+    background: var(--red-dim);
+    border: 1px solid var(--red);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+  }
+  .clear-confirm.show{ display:flex; }
+  .clear-confirm p{ margin:0; font-size:14px; color: var(--text-primary); font-weight:600; }
+  .clear-confirm-actions{ display:flex; gap:8px; flex-shrink:0; }
+  .clear-confirm-actions .cancel-btn, .clear-confirm-actions .confirm-delete-btn{ padding: 9px 18px; }
+
+  .grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+
+  .card{
+    position:relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 18px 16px 18px;
+    overflow:hidden;
+    transition: border-color .15s ease, transform .15s ease;
+  }
+  .card::before{
+    content:"";
+    position:absolute; left:0; top:0; bottom:0; width:4px;
+  }
+  .card.type-delivery::before{ background: var(--teal); }
+  .card.type-pickup::before{ background: var(--text-faint); }
+  .card:hover{ border-color: var(--border); transform: translateY(-2px); }
+
+  .card-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom: 10px; }
+  .invoice-no{ font-family: var(--font-mono); font-size: 20px; font-weight:700; letter-spacing: 0.02em; }
+  .type-badge{
+    display:flex; align-items:center; gap:6px;
+    font-size: 11px; font-weight:600; text-transform:uppercase; letter-spacing:0.04em;
+    color: var(--text-muted);
+    white-space:nowrap;
+  }
+  .type-badge .dot{ width:7px; height:7px; border-radius:50%; }
+  .type-delivery .type-badge .dot{ background: var(--teal); }
+  .type-pickup .type-badge .dot{ background: var(--text-faint); }
+  .type-delivery .type-badge{ color: var(--teal); }
+
+  .card-note{
+    font-size: 14px; color: var(--text-primary);
+    line-height: 1.5;
+    margin: 0 0 14px 0;
+    min-height: 20px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .card-note:empty::before{ content:"No note"; color: var(--text-faint); font-style:italic; }
+
+  .card-meta{
+    display:flex; justify-content:space-between; align-items:center;
+    font-family: var(--font-mono); font-size: 11px; color: var(--text-faint);
+  }
+
+  .urgent-stamp{
+    position:absolute; top:14px; right:-32px;
+    background: var(--red);
+    color:#2a0708;
+    font-family: var(--font-display);
+    font-size: 12px; font-weight:800; letter-spacing:0.12em;
+    padding: 3px 38px;
+    transform: rotate(35deg);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+  }
+
+  .complete-overlay{
+    position:absolute; inset:0;
+    background: linear-gradient(180deg, rgba(28,34,44,0) 0%, rgba(28,34,44,0.94) 40%, rgba(28,34,44,0.98) 100%);
+    display:flex; align-items:flex-end; justify-content:center; padding-bottom: 16px;
+    opacity:0; pointer-events:none;
+    transition: opacity .18s ease;
+  }
+  .card:hover .complete-overlay, .card:focus-within .complete-overlay{ opacity:1; pointer-events:auto; }
+  .btn-row{ display:flex; align-items:center; gap:8px; width:100%; padding: 0 16px; }
+  .btn-row.single{ justify-content: center; }
+  .complete-btn{
+    flex:1;
+    background: var(--green);
+    color: #062012;
+    border:none; border-radius: 7px;
+    padding: 10px 14px;
+    font-family: var(--font-display);
+    font-size: 15px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase;
+    transition: filter .15s ease, transform .1s ease;
+  }
+  .complete-btn:hover{ filter: brightness(1.1); }
+  .complete-btn:active{ transform: scale(0.96); }
+
+  .icon-btn{
+    flex-shrink:0;
+    width: 40px; height: 40px;
+    display:flex; align-items:center; justify-content:center;
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    color: var(--text-muted);
+    font-size: 16px;
+    line-height:1;
+    transition: filter .15s ease, transform .1s ease, border-color .15s ease, color .15s ease, background .15s ease;
+  }
+  .icon-btn:active{ transform: scale(0.94); }
+  .icon-btn.edit-btn:hover{ border-color: var(--teal); color: var(--teal); background: var(--teal-dim); }
+  .icon-btn.delete-btn:hover{ border-color: var(--red); color: var(--red); background: var(--red-dim); }
+
+  /* ---------- Inline edit form ---------- */
+  .card.editing{ cursor: default; }
+  .card-edit .field{ margin-bottom: 12px; }
+  .card-edit .field input[type=text], .card-edit .field textarea{
+    width:100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-primary);
+    padding: 9px 11px;
+    font-size: 14px;
+  }
+  .card-edit .field input[type=text]{ font-family: var(--font-mono); font-size:16px; }
+  .card-edit .field textarea{ resize: vertical; min-height: 56px; line-height:1.45; font-family: var(--font-body); }
+  .card-edit .field input:focus, .card-edit .field textarea:focus{
+    outline:none; border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal-dim);
+  }
+  .card-edit .check-row{ margin-bottom: 14px; gap:8px; }
+  .card-edit .check-pill{ padding: 9px 10px; }
+  .card-edit .check-pill label{ font-size:13px; }
+  .edit-actions{ display:flex; gap:8px; }
+  .save-btn, .cancel-btn{
+    flex:1;
+    border-radius: 7px;
+    padding: 10px;
+    font-family: var(--font-display);
+    font-size: 14px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase;
+    transition: filter .15s ease, transform .1s ease;
+  }
+  .save-btn{ background: var(--teal); color: #062420; border:none; }
+  .save-btn:hover{ filter: brightness(1.1); }
+  .cancel-btn{ background: var(--surface-raised); color: var(--text-muted); border:1px solid var(--border); }
+  .cancel-btn:hover{ color: var(--text-primary); border-color: var(--text-faint); }
+  .save-btn:active, .cancel-btn:active{ transform: scale(0.97); }
+
+  .card.deleting{ animation: deletePop .32s ease forwards; }
+  @keyframes deletePop{
+    0%{ opacity:1; transform: scale(1); }
+    50%{ opacity:.5; transform: scale(1.02) rotate(-1deg); }
+    100%{ opacity:0; transform: scale(0.88) rotate(-2deg); }
+  }
+
+  .confirm-overlay{
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    background: linear-gradient(180deg, rgba(28,34,44,0) 0%, rgba(46,20,21,0.92) 35%, rgba(46,20,21,0.98) 100%) !important;
+  }
+  .confirm-box{ width:100%; padding: 0 16px; text-align:center; }
+  .confirm-text{
+    margin: 0 0 10px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .confirm-overlay .btn-row{ padding:0; }
+  .confirm-overlay .cancel-btn{ flex:1; }
+  .confirm-delete-btn{
+    flex:1;
+    background: var(--red);
+    color: #2a0708;
+    border:none; border-radius: 7px;
+    padding: 10px;
+    font-family: var(--font-display);
+    font-size: 14px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase;
+    transition: filter .15s ease, transform .1s ease;
+  }
+  .confirm-delete-btn:hover{ filter: brightness(1.1); }
+  .confirm-delete-btn:active{ transform: scale(0.96); }
+
+  .card.completing{ animation: completePop .38s ease forwards; }
+  @keyframes completePop{
+    0%{ opacity:1; transform: scale(1); }
+    60%{ opacity:.6; transform: scale(1.03); }
+    100%{ opacity:0; transform: scale(0.9); }
+  }
+  .card.entering{ animation: enterCard .3s ease; }
+  @keyframes enterCard{
+    from{ opacity:0; transform: translateY(8px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+
+  .card.done{ opacity: 0.82; }
+  .card.done::before{ background: var(--green); }
+  .card.done .card-top .type-badge{ color: var(--text-muted); }
+
+  .empty-state{
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    padding: 50px 24px;
+    text-align:center;
+    color: var(--text-muted);
+  }
+  .empty-state .icon{ font-size: 28px; margin-bottom:10px; opacity:.6; }
+  .empty-state p{ margin: 4px 0; font-size: 14px; }
+  .empty-state .big{ font-family: var(--font-display); font-size:20px; color: var(--text-primary); text-transform:uppercase; letter-spacing:0.03em; }
+
+  /* ---------- Toast ---------- */
+  .toast{
+    position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px);
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--amber);
+    color: var(--text-primary);
+    padding: 13px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    display:flex; align-items:center; gap:10px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+    opacity:0; pointer-events:none;
+    transition: opacity .25s ease, transform .25s ease;
+    z-index: 50;
+  }
+  .toast.show{ opacity:1; transform: translateX(-50%) translateY(0); pointer-events:auto; }
+  .toast .invoice-no{ font-size:15px; }
+
+  @media (max-width: 560px){
+    .tabs{ overflow-x:auto; }
+    .tab{ margin-right: 18px; font-size:15px; white-space:nowrap; }
+    .ticket-head, .ticket-body{ padding-left:20px; padding-right:20px; }
+    .grid{ grid-template-columns: 1fr; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <h1>Dispatch</h1>
+      <span>ORDER SUBMISSION &amp; FULFILLMENT</span>
+    </div>
+    <nav class="tabs">
+      <button class="tab active" data-tab="home">Home</button>
+      <button class="tab" data-tab="board">Pick up / Delivery <span class="count" id="count-board">0</span></button>
+      <button class="tab" data-tab="completed">Completed <span class="count" id="count-completed">0</span></button>
+    </nav>
+  </div>
+</div>
+
+<main>
+
+  <!-- HOME -->
+  <section class="view active" id="view-home">
+    <div class="intake-wrap">
+      <div class="ticket" id="order-form">
+        <div class="ticket-head">
+          <p class="eyebrow">New order ticket</p>
+          <h2>Submit Order</h2>
+        </div>
+        <div class="ticket-body">
+          <div class="field" id="field-invoice">
+            <label for="invoice">Invoice number</label>
+            <input type="text" id="invoice" name="invoice" placeholder="e.g. INV-10492" autocomplete="off">
+            <p class="hint">Enter an invoice number to submit this order.</p>
+          </div>
+          <div class="field">
+            <label for="note">Note</label>
+            <textarea id="note" name="note" placeholder="Anything the fulfillment team should know..."></textarea>
+          </div>
+          <div class="check-row">
+            <div class="check-pill" id="pill-pickup">
+              <input type="checkbox" id="pickup" name="pickup" checked>
+              <label for="pickup">Pick up</label>
+            </div>
+            <div class="check-pill" id="pill-delivery">
+              <input type="checkbox" id="delivery" name="delivery">
+              <label for="delivery">Delivery</label>
+            </div>
+            <div class="check-pill urgent" id="pill-urgent">
+              <input type="checkbox" id="urgent" name="urgent">
+              <label for="urgent">Urgent</label>
+            </div>
+          </div>
+          <button type="button" id="submit-order" class="submit-btn">Send to Dispatch</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PICKUP / DELIVERY BOARD -->
+  <section class="view" id="view-board">
+    <div class="board-head">
+      <h2>Pick up / Delivery</h2>
+      <span class="sub">Hover a ticket to mark it complete</span>
+    </div>
+    <div class="grid" id="board-grid"></div>
+    <div class="empty-state" id="board-empty">
+      <div class="icon">◎</div>
+      <p class="big">Dispatch is clear</p>
+      <p>Submitted orders will appear here.</p>
+    </div>
+  </section>
+
+  <!-- COMPLETED -->
+  <section class="view" id="view-completed">
+    <div class="board-head">
+      <h2>Completed</h2>
+      <div class="board-head-right">
+        <span class="sub" id="completed-sub"></span>
+        <button class="clear-all-btn" id="clear-all-btn" title="Delete all completed orders">Delete All</button>
+      </div>
+    </div>
+    <div class="clear-confirm" id="clear-confirm">
+      <p><span id="clear-confirm-text"></span></p>
+      <div class="clear-confirm-actions">
+        <button class="cancel-btn" id="clear-cancel-btn">Cancel</button>
+        <button class="confirm-delete-btn" id="clear-confirm-btn">Delete All</button>
+      </div>
+    </div>
+    <div class="grid" id="completed-grid"></div>
+    <div class="empty-state" id="completed-empty">
+      <div class="icon">✓</div>
+      <p class="big">Nothing completed yet</p>
+      <p>Finished orders will land here.</p>
+    </div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast">
+  <span>📋</span>
+  <span id="toast-text"></span>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+  "use strict";
+
+  // ---------- Supabase config ----------
+  // 1. Create a free project at https://supabase.com
+  // 2. Open Project → SQL Editor, run the contents of schema.sql (provided alongside this file)
+  // 3. Open Project Settings → API, copy your Project URL and "anon public" key below
+  // Leave these as-is to run the app in local-only demo mode (no persistence, no multi-device sync).
+  const SUPABASE_URL = 'https://supabase.com/dashboard/project/txvncezvdpfftzsfdvlj';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4dm5jZXp2ZHBmZnR6c2ZkdmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1MjU4MDUsImV4cCI6MjEwMzEwMTgwNX0.Wst0ApwJu0mhrPVKED51HnzWpcT5h-o2mi0YF0GmVi0';
+
+  const db = (SUPABASE_URL.indexOf('http') === 0 && window.supabase)
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    : null;
+
+  if(!db){
+    console.warn('Supabase is not configured — running in local-only demo mode. Orders will not persist across reloads or sync across devices. See the config block at the top of the script to connect a real database.');
+  }
+
+  // ---------- In-memory state ----------
+  // When Supabase is configured, this state is a local mirror of the database,
+  // kept in sync via realtime subscriptions. When it's not configured, this is
+  // the only source of truth and resets on reload.
+  let pending = [];
+  let completed = [];
+  let nextId = 1; // only used in local-only demo mode
+
+  // ---------- Supabase data layer ----------
+  function mapRow(row){
+    return {
+      id: row.id,
+      invoice: row.invoice,
+      note: row.note || '',
+      delivery: row.delivery,
+      urgent: row.urgent,
+      status: row.status,
+      createdAt: new Date(row.created_at),
+      completedAt: row.completed_at ? new Date(row.completed_at) : null,
+    };
+  }
+
+  async function dbFetchAll(){
+    const { data, error } = await db.from('orders').select('*').order('created_at', { ascending: false });
+    if(error){ console.error(error); showToast('Could not load orders from the database'); return null; }
+    return data.map(mapRow);
+  }
+  async function dbInsertOrder(fields){
+    const { data, error } = await db.from('orders').insert(fields).select().single();
+    if(error){ console.error(error); showToast('Could not save order to the database'); return null; }
+    return mapRow(data);
+  }
+  async function dbUpdateOrder(id, fields){
+    const { error } = await db.from('orders').update(fields).eq('id', id);
+    if(error){ console.error(error); showToast('Could not sync change to the database'); return false; }
+    return true;
+  }
+  async function dbDeleteOrder(id){
+    const { error } = await db.from('orders').delete().eq('id', id);
+    if(error){ console.error(error); showToast('Could not delete order from the database'); return false; }
+    return true;
+  }
+  async function dbDeleteAllCompleted(){
+    const { error } = await db.from('orders').delete().eq('status', 'completed');
+    if(error){ console.error(error); showToast('Could not clear completed orders in the database'); return false; }
+    return true;
+  }
+
+  function subscribeRealtime(){
+    db.channel('orders-changes')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
+        const order = mapRow(payload.new);
+        if(order.status === 'completed'){
+          if(!completed.some(o => o.id === order.id)){
+            completed.unshift(order);
+            renderCompleted();
+          }
+          return;
+        }
+        if(pending.some(o => o.id === order.id)) return;
+        pending.unshift(order);
+        sortPending();
+        renderBoard(order.id);
+        if(currentTab === 'board') playNotification(order.urgent);
+        showToast('Order <span class="invoice-no">' + escapeHtml(order.invoice) + '</span> sent to ' + (order.delivery ? 'delivery' : 'pickup') + ' dispatch');
+        flashBoardTab();
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
+        const order = mapRow(payload.new);
+        pending = pending.filter(o => o.id !== order.id);
+        completed = completed.filter(o => o.id !== order.id);
+        if(order.status === 'completed'){
+          completed.unshift(order);
+        } else {
+          pending.unshift(order);
+          sortPending();
+        }
+        renderBoard();
+        renderCompleted();
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'orders' }, (payload) => {
+        const id = payload.old.id;
+        pending = pending.filter(o => o.id !== id);
+        completed = completed.filter(o => o.id !== id);
+        renderBoard();
+        renderCompleted();
+      })
+      .subscribe();
+  }
+
+  // ---------- Elements ----------
+  const tabs = document.querySelectorAll('.tab');
+  const views = {
+    home: document.getElementById('view-home'),
+    board: document.getElementById('view-board'),
+    completed: document.getElementById('view-completed'),
+  };
+  const orderTicket = document.getElementById('order-form');
+  const submitBtn = document.getElementById('submit-order');
+  const invoiceField = document.getElementById('field-invoice');
+  const invoiceInput = document.getElementById('invoice');
+  invoiceInput.addEventListener('input', () => invoiceField.classList.remove('error'));
+  const noteInput = document.getElementById('note');
+  const pickupInput = document.getElementById('pickup');
+  const deliveryInput = document.getElementById('delivery');
+  const urgentInput = document.getElementById('urgent');
+  const pillPickup = document.getElementById('pill-pickup');
+  const pillDelivery = document.getElementById('pill-delivery');
+  const pillUrgent = document.getElementById('pill-urgent');
+
+  const boardGrid = document.getElementById('board-grid');
+  const boardEmpty = document.getElementById('board-empty');
+  const completedGrid = document.getElementById('completed-grid');
+  const completedEmpty = document.getElementById('completed-empty');
+  const completedSub = document.getElementById('completed-sub');
+  const clearAllBtn = document.getElementById('clear-all-btn');
+  const clearConfirm = document.getElementById('clear-confirm');
+  const clearConfirmText = document.getElementById('clear-confirm-text');
+  const clearCancelBtn = document.getElementById('clear-cancel-btn');
+  const clearConfirmBtn = document.getElementById('clear-confirm-btn');
+
+  const countBoard = document.getElementById('count-board');
+  const countCompleted = document.getElementById('count-completed');
+  const boardTab = document.querySelector('.tab[data-tab="board"]');
+
+  const toast = document.getElementById('toast');
+  const toastText = document.getElementById('toast-text');
+
+  // ---------- Tab switching ----------
+  let currentTab = 'home';
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+  });
+  function switchTab(name){
+    currentTab = name;
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+    Object.keys(views).forEach(k => views[k].classList.toggle('active', k === name));
+  }
+
+  // ---------- Checkbox pill styling ----------
+  function syncPill(input, pill){
+    pill.classList.toggle('checked', input.checked);
+  }
+  function selectType(type){
+    // Pick up and Delivery are mutually exclusive; exactly one stays checked.
+    pickupInput.checked = (type === 'pickup');
+    deliveryInput.checked = (type === 'delivery');
+    syncPill(pickupInput, pillPickup);
+    syncPill(deliveryInput, pillDelivery);
+  }
+  pickupInput.addEventListener('change', () => { if(pickupInput.checked) selectType('pickup'); else selectType('delivery'); });
+  deliveryInput.addEventListener('change', () => { if(deliveryInput.checked) selectType('delivery'); else selectType('pickup'); });
+  pillPickup.addEventListener('click', (e) => { if(e.target !== pickupInput) selectType('pickup'); });
+  pillDelivery.addEventListener('click', (e) => { if(e.target !== deliveryInput) selectType('delivery'); });
+
+  urgentInput.addEventListener('change', () => syncPill(urgentInput, pillUrgent));
+  pillUrgent.addEventListener('click', (e) => { if(e.target === pillUrgent){ urgentInput.checked = !urgentInput.checked; syncPill(urgentInput, pillUrgent);} });
+  syncPill(pickupInput, pillPickup);
+
+  // ---------- Notification sound ----------
+  let audioCtx = null;
+  function getCtx(){
+    if(!audioCtx){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AC();
+    }
+    return audioCtx;
+  }
+  function beep(freq, start, duration, gainPeak){
+    const ctx = getCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = freq;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    const t0 = ctx.currentTime + start;
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(gainPeak, t0 + 0.02);
+    gain.gain.linearRampToValueAtTime(0, t0 + duration);
+    osc.start(t0);
+    osc.stop(t0 + duration + 0.02);
+  }
+  function playNotification(isUrgent){
+    try{
+      const ctx = getCtx();
+      if(ctx.state === 'suspended') ctx.resume();
+      if(isUrgent){
+        beep(880, 0.00, 0.16, 0.7);
+        beep(880, 0.20, 0.16, 0.7);
+        beep(880, 0.40, 0.16, 0.7);
+        beep(1175, 0.60, 0.28, 0.8);
+      } else {
+        beep(740, 0.00, 0.18, 0.65);
+        beep(990, 0.22, 0.18, 0.65);
+        beep(1175, 0.44, 0.26, 0.7);
+      }
+    } catch(err){ /* audio unavailable, fail silently */ }
+  }
+
+  // ---------- Toast ----------
+  let toastTimer = null;
+  function showToast(html){
+    toastText.innerHTML = html;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+  }
+
+  // ---------- Form submit ----------
+  submitBtn.addEventListener('click', submitOrder);
+  invoiceInput.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); submitOrder(); }
+  });
+
+  async function submitOrder(){
+    const invoice = invoiceInput.value.trim();
+    if(!invoice){
+      invoiceField.classList.add('error');
+      invoiceField.classList.remove('shake');
+      void invoiceField.offsetWidth;
+      invoiceField.classList.add('shake');
+      invoiceInput.focus();
+      invoiceInput.scrollIntoView({ behavior:'smooth', block:'center' });
+      showToast('Enter an invoice number before sending to dispatch');
+      return;
+    }
+    invoiceField.classList.remove('error');
+
+    const fields = {
+      invoice: invoice,
+      note: noteInput.value.trim(),
+      delivery: deliveryInput.checked,
+      urgent: urgentInput.checked,
+    };
+
+    submitBtn.disabled = true;
+
+    if(db){
+      const inserted = await dbInsertOrder(Object.assign({}, fields, { status: 'pending' }));
+      submitBtn.disabled = false;
+      if(!inserted) return; // dbInsertOrder already showed an error toast
+      // The realtime INSERT event (received by this tab too) adds it to pending[],
+      // renders the card, plays the notification, and shows the confirmation toast.
+    } else {
+      const order = Object.assign({ id: nextId++, createdAt: new Date(), completedAt: null }, fields);
+      pending.unshift(order);
+      sortPending();
+      renderBoard(order.id);
+      if(currentTab === 'board'){
+        playNotification(order.urgent);
+      }
+      showToast('Order <span class="invoice-no">' + escapeHtml(order.invoice) + '</span> sent to ' + (order.delivery ? 'delivery' : 'pickup') + ' dispatch');
+      flashBoardTab();
+      submitBtn.disabled = false;
+    }
+
+    // reset form
+    invoiceInput.value = '';
+    noteInput.value = '';
+    selectType('pickup');
+    urgentInput.checked = false;
+    syncPill(urgentInput, pillUrgent);
+  }
+
+  function flashBoardTab(){
+    boardTab.classList.remove('flash');
+    void boardTab.offsetWidth; // restart animation
+    boardTab.classList.add('flash');
+  }
+
+  function sortPending(){
+    pending.sort((a,b) => {
+      if(a.urgent !== b.urgent) return a.urgent ? -1 : 1;
+      return b.createdAt - a.createdAt;
+    });
+  }
+
+  // ---------- Rendering ----------
+  let editingId = null;
+  let confirmDeleteId = null;
+
+  function formatTime(d){
+    return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  }
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+  function escapeAttr(str){
+    return escapeHtml(str).replace(/"/g, '&quot;');
+  }
+
+  function editFormHtml(order){
+    const pickupChecked = !order.delivery;
+    return (
+      '<div class="card-edit">' +
+        '<div class="field"><input type="text" class="edit-invoice" value="' + escapeAttr(order.invoice) + '" placeholder="Invoice number"></div>' +
+        '<div class="field"><textarea class="edit-note" placeholder="Note">' + escapeHtml(order.note) + '</textarea></div>' +
+        '<div class="check-row">' +
+          '<div class="check-pill' + (pickupChecked ? ' checked' : '') + '" data-edit-pill="pickup">' +
+            '<input type="checkbox" class="edit-pickup" id="edit-pickup-' + order.id + '"' + (pickupChecked ? ' checked' : '') + '>' +
+            '<label for="edit-pickup-' + order.id + '">Pick up</label>' +
+          '</div>' +
+          '<div class="check-pill' + (order.delivery ? ' checked' : '') + '" data-edit-pill="delivery">' +
+            '<input type="checkbox" class="edit-delivery" id="edit-delivery-' + order.id + '"' + (order.delivery ? ' checked' : '') + '>' +
+            '<label for="edit-delivery-' + order.id + '">Delivery</label>' +
+          '</div>' +
+          '<div class="check-pill urgent' + (order.urgent ? ' checked' : '') + '" data-edit-pill="urgent">' +
+            '<input type="checkbox" class="edit-urgent" id="edit-urgent-' + order.id + '"' + (order.urgent ? ' checked' : '') + '>' +
+            '<label for="edit-urgent-' + order.id + '">Urgent</label>' +
+          '</div>' +
+        '</div>' +
+        '<div class="edit-actions">' +
+          '<button class="save-btn" data-id="' + order.id + '">Save</button>' +
+          '<button class="cancel-btn" data-id="' + order.id + '">Cancel</button>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function cardHtml(order, mode){
+    const typeClass = order.delivery ? 'type-delivery' : 'type-pickup';
+    const typeLabel = order.delivery ? 'Delivery' : 'Pick up';
+    const urgentStamp = order.urgent ? '<div class="urgent-stamp">Urgent</div>' : '';
+    const doneClass = mode === 'completed' ? ' done' : '';
+
+    if(mode === 'board' && order.id === editingId){
+      return (
+        '<div class="card ' + typeClass + ' editing" data-id="' + order.id + '">' +
+          urgentStamp +
+          editFormHtml(order) +
+        '</div>'
+      );
+    }
+
+    let overlay = '';
+    if(mode === 'board'){
+      if(order.id === confirmDeleteId){
+        overlay =
+          '<div class="complete-overlay confirm-overlay"><div class="confirm-box">' +
+            '<p class="confirm-text">Delete this order?</p>' +
+            '<div class="btn-row">' +
+              '<button class="cancel-btn" data-id="' + order.id + '" data-action="cancel-delete">Cancel</button>' +
+              '<button class="confirm-delete-btn" data-id="' + order.id + '">Delete</button>' +
+            '</div>' +
+          '</div></div>';
+      } else {
+        overlay =
+          '<div class="complete-overlay"><div class="btn-row">' +
+            '<button class="icon-btn edit-btn" data-id="' + order.id + '" title="Edit order" aria-label="Edit order">✎</button>' +
+            '<button class="complete-btn" data-id="' + order.id + '">Mark Complete</button>' +
+            '<button class="icon-btn delete-btn" data-id="' + order.id + '" title="Delete order" aria-label="Delete order">🗑</button>' +
+          '</div></div>';
+      }
+    } else if(mode === 'completed'){
+      if(order.id === confirmDeleteId){
+        overlay =
+          '<div class="complete-overlay confirm-overlay"><div class="confirm-box">' +
+            '<p class="confirm-text">Delete this order?</p>' +
+            '<div class="btn-row">' +
+              '<button class="cancel-btn" data-id="' + order.id + '" data-action="cancel-delete">Cancel</button>' +
+              '<button class="confirm-delete-btn" data-id="' + order.id + '">Delete</button>' +
+            '</div>' +
+          '</div></div>';
+      } else {
+        overlay =
+          '<div class="complete-overlay"><div class="btn-row single">' +
+            '<button class="icon-btn delete-btn" data-id="' + order.id + '" title="Delete order" aria-label="Delete order">🗑</button>' +
+          '</div></div>';
+      }
+    }
+    const timeLabel = mode === 'board'
+      ? 'In · ' + formatTime(order.createdAt)
+      : 'Done · ' + formatTime(order.completedAt);
+
+    return (
+      '<div class="card ' + typeClass + doneClass + '" data-id="' + order.id + '">' +
+        urgentStamp +
+        '<div class="card-top">' +
+          '<div class="invoice-no">' + escapeHtml(order.invoice) + '</div>' +
+          '<div class="type-badge"><span class="dot"></span>' + typeLabel + '</div>' +
+        '</div>' +
+        '<div class="card-note">' + escapeHtml(order.note) + '</div>' +
+        '<div class="card-meta"><span>' + timeLabel + '</span></div>' +
+        overlay +
+      '</div>'
+    );
+  }
+
+  function renderBoard(highlightId){
+    boardGrid.innerHTML = pending.map(o => cardHtml(o, 'board')).join('');
+    boardEmpty.style.display = pending.length ? 'none' : 'block';
+    if(highlightId){
+      const el = boardGrid.querySelector('[data-id="' + highlightId + '"]');
+      if(el) el.classList.add('entering');
+    }
+    countBoard.textContent = pending.length;
+
+    boardGrid.querySelectorAll('.complete-btn').forEach(btn => btn.addEventListener('click', onCompleteClick));
+    boardGrid.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', onEditClick));
+    boardGrid.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', onDeleteClick));
+    boardGrid.querySelectorAll('.save-btn').forEach(btn => btn.addEventListener('click', onSaveClick));
+    boardGrid.querySelectorAll('.cancel-btn').forEach(btn => btn.addEventListener('click', onCancelClick));
+    boardGrid.querySelectorAll('.confirm-delete-btn').forEach(btn => btn.addEventListener('click', onConfirmDeleteClick));
+
+    // wire up mutually-exclusive Pick up / Delivery pills + Urgent pill inside any open edit form
+    boardGrid.querySelectorAll('.card.editing').forEach(card => {
+      const pickupChk = card.querySelector('.edit-pickup');
+      const deliveryChk = card.querySelector('.edit-delivery');
+      const urgentChk = card.querySelector('.edit-urgent');
+      const pickupPill = card.querySelector('[data-edit-pill="pickup"]');
+      const deliveryPill = card.querySelector('[data-edit-pill="delivery"]');
+      const urgentPill = card.querySelector('[data-edit-pill="urgent"]');
+
+      function setType(isDelivery){
+        pickupChk.checked = !isDelivery;
+        deliveryChk.checked = isDelivery;
+        pickupPill.classList.toggle('checked', !isDelivery);
+        deliveryPill.classList.toggle('checked', isDelivery);
+      }
+      pickupChk.addEventListener('change', () => setType(false));
+      deliveryChk.addEventListener('change', () => setType(true));
+      pickupPill.addEventListener('click', (e) => { if(e.target !== pickupChk) setType(false); });
+      deliveryPill.addEventListener('click', (e) => { if(e.target !== deliveryChk) setType(true); });
+
+      urgentChk.addEventListener('change', () => urgentPill.classList.toggle('checked', urgentChk.checked));
+      urgentPill.addEventListener('click', (e) => { if(e.target === urgentPill){ urgentChk.checked = !urgentChk.checked; urgentPill.classList.toggle('checked', urgentChk.checked); } });
+    });
+  }
+
+  function renderCompleted(){
+    completedGrid.innerHTML = completed.map(o => cardHtml(o, 'completed')).join('');
+    completedEmpty.style.display = completed.length ? 'none' : 'block';
+    countCompleted.textContent = completed.length;
+    completedSub.textContent = completed.length ? completed.length + ' order' + (completed.length===1?'':'s') + ' fulfilled' : '';
+
+    completedGrid.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', onDeleteClick));
+    completedGrid.querySelectorAll('.confirm-delete-btn').forEach(btn => btn.addEventListener('click', onConfirmDeleteClick));
+    completedGrid.querySelectorAll('.cancel-btn').forEach(btn => btn.addEventListener('click', onCancelClick));
+
+    clearAllBtn.disabled = completed.length === 0;
+    if(completed.length === 0 && confirmClearAll){
+      confirmClearAll = false;
+    }
+    clearConfirm.classList.toggle('show', confirmClearAll);
+    if(confirmClearAll){
+      clearConfirmText.textContent = 'Delete all ' + completed.length + ' completed order' + (completed.length===1?'':'s') + '? This cannot be undone.';
+    }
+  }
+
+  async function onCompleteClick(e){
+    const id = parseInt(e.currentTarget.dataset.id, 10);
+    const idx = pending.findIndex(o => o.id === id);
+    if(idx === -1) return;
+    const card = boardGrid.querySelector('[data-id="' + id + '"]');
+    if(card) card.classList.add('completing');
+    const completedAt = new Date();
+
+    if(db){
+      const ok = await dbUpdateOrder(id, { status: 'completed', completed_at: completedAt.toISOString() });
+      if(!ok){ if(card) card.classList.remove('completing'); return; }
+      // realtime UPDATE event moves it from pending[] to completed[] and re-renders
+      return;
+    }
+
+    setTimeout(() => {
+      const stillIdx = pending.findIndex(o => o.id === id);
+      if(stillIdx === -1) return;
+      const order = pending.splice(stillIdx, 1)[0];
+      order.completedAt = completedAt;
+      completed.unshift(order);
+      renderBoard();
+      renderCompleted();
+    }, 340);
+  }
+
+  function onEditClick(e){
+    editingId = parseInt(e.currentTarget.dataset.id, 10);
+    renderBoard();
+    const card = boardGrid.querySelector('[data-id="' + editingId + '"]');
+    if(card){
+      const input = card.querySelector('.edit-invoice');
+      if(input){ input.focus(); input.select(); }
+    }
+  }
+
+  function onCancelClick(e){
+    if(e.currentTarget.dataset.action === 'cancel-delete'){
+      confirmDeleteId = null;
+    } else {
+      editingId = null;
+    }
+    renderBoard();
+    renderCompleted();
+  }
+
+  async function onSaveClick(e){
+    const id = parseInt(e.currentTarget.dataset.id, 10);
+    const order = pending.find(o => o.id === id);
+    if(!order) return;
+    const card = boardGrid.querySelector('[data-id="' + id + '"]');
+    if(!card) return;
+
+    const invoiceVal = card.querySelector('.edit-invoice').value.trim();
+    if(!invoiceVal){
+      card.querySelector('.edit-invoice').focus();
+      return;
+    }
+    const noteVal = card.querySelector('.edit-note').value.trim();
+    const deliveryVal = card.querySelector('.edit-delivery').checked;
+    const urgentVal = card.querySelector('.edit-urgent').checked;
+
+    if(db){
+      const ok = await dbUpdateOrder(id, { invoice: invoiceVal, note: noteVal, delivery: deliveryVal, urgent: urgentVal });
+      if(!ok) return;
+      editingId = null;
+      showToast('Order <span class="invoice-no">' + escapeHtml(invoiceVal) + '</span> updated');
+      // realtime UPDATE event refreshes the card with the new values
+      return;
+    }
+
+    order.invoice = invoiceVal;
+    order.note = noteVal;
+    order.delivery = deliveryVal;
+    order.urgent = urgentVal;
+
+    editingId = null;
+    sortPending();
+    renderBoard(order.id);
+    showToast('Order <span class="invoice-no">' + escapeHtml(order.invoice) + '</span> updated');
+  }
+
+  function onDeleteClick(e){
+    const id = parseInt(e.currentTarget.dataset.id, 10);
+    if(!pending.some(o => o.id === id) && !completed.some(o => o.id === id)) return;
+    confirmDeleteId = id;
+    editingId = null;
+    renderBoard();
+    renderCompleted();
+  }
+
+  async function onConfirmDeleteClick(e){
+    const id = parseInt(e.currentTarget.dataset.id, 10);
+    confirmDeleteId = null;
+
+    const inPending = pending.some(o => o.id === id);
+    const inCompleted = completed.some(o => o.id === id);
+    if(!inPending && !inCompleted) return;
+
+    const card = (inPending ? boardGrid : completedGrid).querySelector('[data-id="' + id + '"]');
+    if(card) card.classList.add('deleting');
+
+    if(db){
+      const ok = await dbDeleteOrder(id);
+      if(!ok){ if(card) card.classList.remove('deleting'); return; }
+      // realtime DELETE event removes it from local state and re-renders
+      return;
+    }
+
+    setTimeout(() => {
+      pending = pending.filter(o => o.id !== id);
+      completed = completed.filter(o => o.id !== id);
+      renderBoard();
+      renderCompleted();
+    }, 300);
+  }
+
+  // ---------- Mass delete (Completed tab) ----------
+  let confirmClearAll = false;
+
+  clearAllBtn.addEventListener('click', () => {
+    if(completed.length === 0) return;
+    confirmClearAll = true;
+    renderCompleted();
+  });
+  clearCancelBtn.addEventListener('click', () => {
+    confirmClearAll = false;
+    renderCompleted();
+  });
+  clearConfirmBtn.addEventListener('click', async () => {
+    confirmClearAll = false;
+    renderCompleted(); // hide the confirm banner immediately
+
+    if(db){
+      const ok = await dbDeleteAllCompleted();
+      if(ok) showToast('All completed orders deleted');
+      // realtime DELETE events (one per row) clear completed[] and re-render
+      return;
+    }
+
+    completed = [];
+    renderCompleted();
+    showToast('All completed orders deleted');
+  });
+
+  // ---------- Init ----------
+  if(db){
+    dbFetchAll().then(rows => {
+      if(rows){
+        pending = rows.filter(o => o.status !== 'completed');
+        completed = rows.filter(o => o.status === 'completed');
+        sortPending();
+        completed.sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0));
+      }
+      renderBoard();
+      renderCompleted();
+    });
+    subscribeRealtime();
+  } else {
+    renderBoard();
+    renderCompleted();
+  }
+})();
+</script>
+
+</body>
+</html>
