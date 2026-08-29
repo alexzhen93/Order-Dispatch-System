@@ -288,6 +288,7 @@
     display:grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 16px;
+    align-items: start;
   }
 
   .card{
@@ -397,36 +398,39 @@
     box-shadow: 0 2px 6px rgba(0,0,0,0.35);
   }
 
+  /* Revealed as normal in-flow content (max-height expansion), not an absolutely-positioned
+     overlay — so revealing Edit/Complete/Delete grows the card downward instead of ever
+     visually darkening or covering existing content like the note text underneath it. */
   .complete-overlay{
-    position:absolute; left:0; right:0; bottom:0;
-    background: linear-gradient(180deg, rgba(28,34,44,0) 0%, rgba(28,34,44,0.94) 45%, rgba(28,34,44,0.98) 100%);
-    display:flex; align-items:flex-end; justify-content:center;
-    padding: 22px 0 16px 0;
-    opacity:0; pointer-events:none;
-    transition: opacity .18s ease;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    display:flex; align-items:center; justify-content:center;
+    padding: 0 16px;
+    margin-top: 0;
+    border-top: 1px solid transparent;
+    transition: max-height .2s ease, opacity .15s ease, margin-top .2s ease, padding-top .2s ease, border-color .2s ease;
   }
-  /* The overlay box only covers its own bottom strip (sized to the button row + fade),
-     not the whole card, so it never visually darkens or blocks content above it like
-     the paid/ring buttons. Pointer-events are also gated to the button row itself. */
-  .complete-overlay .btn-row{ pointer-events: none; }
   @media (hover: hover){
-    .card:hover .complete-overlay, .card:focus-within .complete-overlay{ opacity:1; }
-    .card:hover .complete-overlay .btn-row, .card:focus-within .complete-overlay .btn-row{ pointer-events:auto; }
+    .card:hover .complete-overlay, .card:focus-within .complete-overlay{
+      max-height: 64px; opacity:1; margin-top:12px; padding-top:12px; border-top-color: var(--border);
+    }
   }
   @media (hover: none){
-    .card:focus-within .complete-overlay{ opacity:1; }
-    .card:focus-within .complete-overlay .btn-row{ pointer-events:auto; }
+    .card:focus-within .complete-overlay{
+      max-height: 64px; opacity:1; margin-top:12px; padding-top:12px; border-top-color: var(--border);
+    }
   }
 
   /* Touch devices have no reliable :hover — the action row is revealed by tapping the card
      (toggling the .show-actions class via JS) instead of depending on a hover state. */
   @media (hover: none){
-    .card.show-actions .complete-overlay{ opacity:1; }
-    .card.show-actions .complete-overlay .btn-row{ pointer-events:auto; }
+    .card.show-actions .complete-overlay{
+      max-height: 64px; opacity:1; margin-top:12px; padding-top:12px; border-top-color: var(--border);
+    }
     .card:not(.show-actions):not(.editing){ cursor: pointer; }
   }
-  
-  .btn-row{ display:flex; align-items:center; gap:8px; width:100%; padding: 0 16px; }
+  .btn-row{ display:flex; align-items:center; gap:8px; width:100%; padding: 0; }
   .btn-row.single{ justify-content: center; }
   .complete-btn{
     flex:1;
@@ -501,14 +505,21 @@
   }
 
   .confirm-overlay{
-    top: 0 !important;
-    bottom: 0 !important;
-    padding-top: 0 !important;
+    position: absolute !important;
+    inset: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: center !important;
+    padding: 0 16px 16px 16px !important;
+    margin-top: 0 !important;
+    border-top: none !important;
     opacity: 1 !important;
     pointer-events: auto !important;
     background: linear-gradient(180deg, rgba(28,34,44,0) 0%, rgba(46,20,21,0.92) 35%, rgba(46,20,21,0.98) 100%) !important;
   }
-  .confirm-overlay .btn-row{ pointer-events: auto !important; }
+  .confirm-overlay .btn-row{ pointer-events: auto !important; padding: 0 !important; }
   .confirm-box{ width:100%; padding: 0 16px; text-align:center; }
   .confirm-text{
     margin: 0 0 10px 0;
