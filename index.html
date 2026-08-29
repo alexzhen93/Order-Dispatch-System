@@ -26,6 +26,8 @@
     --red-dim: rgba(229,72,77,0.14);
     --green: #3ddc84;
     --green-dim: rgba(61,220,132,0.14);
+    --gold: #f5c518;
+    --gold-dim: rgba(245,197,24,0.18);
     --font-display: 'Barlow Condensed', sans-serif;
     --font-body: 'Inter', sans-serif;
     --font-mono: 'IBM Plex Mono', monospace;
@@ -206,9 +208,10 @@
     80%{ transform: translateX(3px); }
   }
 
-  .check-row{ display:flex; gap: 12px; margin-bottom: 24px; }
+  .check-row{ display:flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; }
   .check-pill{
-    flex:1;
+    flex: 1 1 calc(50% - 5px);
+    min-width: calc(50% - 5px);
     display:flex; align-items:center; gap:10px;
     background: var(--bg);
     border: 1px solid var(--border);
@@ -218,12 +221,13 @@
   }
   .check-pill input{ accent-color: var(--teal); width:16px; height:16px; }
   .check-pill.urgent input{ accent-color: var(--amber); }
+  .check-pill.paid input{ accent-color: var(--green); }
   .check-pill label{ font-size: 14px; font-weight: 600; cursor:pointer; user-select:none; }
   .check-pill.checked{ border-color: var(--teal); background: var(--teal-dim); }
   .check-pill.urgent.checked{ border-color: var(--amber); background: var(--amber-dim); }
+  .check-pill.paid.checked{ border-color: var(--green); background: var(--green-dim); }
   @media (max-width: 460px){
-    .check-row{ flex-wrap: wrap; }
-    .check-pill{ min-width: calc(50% - 6px); }
+    .check-pill{ min-width: calc(50% - 5px); }
   }
 
   .submit-btn{
@@ -316,6 +320,57 @@
   .type-pickup .type-badge .dot{ background: var(--text-faint); }
   .type-delivery .type-badge{ color: var(--teal); }
 
+  .quick-actions{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom: 12px; flex-wrap:wrap; }
+
+  .paid-badge{
+    display:inline-flex; align-items:center; gap:6px;
+    background: none; border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 3px 10px 3px 8px;
+    font-family: var(--font-body);
+    font-size: 11px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;
+    transition: filter .15s ease, transform .1s ease, border-color .15s ease, background .15s ease, color .15s ease;
+  }
+  .paid-badge .dot{ width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+  .paid-badge:hover{ filter: brightness(1.1); }
+  .paid-badge:active{ transform: scale(0.96); }
+  .paid-badge.is-paid{ border-color: var(--green); color: var(--green); background: var(--green-dim); }
+  .paid-badge.is-paid .dot{ background: var(--green); }
+  .paid-badge.is-unpaid{ border-color: var(--red); color: var(--red); background: var(--red-dim); }
+  .paid-badge.is-unpaid .dot{ background: var(--red); }
+
+  .ring-btn{
+    display:inline-flex; align-items:center; gap:6px;
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 999px;
+    padding: 3px 12px 3px 10px;
+    font-family: var(--font-body);
+    font-size: 11px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;
+    transition: filter .15s ease, transform .1s ease, border-color .15s ease, background .15s ease, color .15s ease;
+  }
+  .ring-btn:hover{ filter: brightness(1.15); border-color: var(--text-faint); }
+  .ring-btn:active{ transform: scale(0.96); }
+  .ring-btn.is-arrived{
+    border-color: var(--gold);
+    color: var(--gold);
+    background: var(--gold-dim);
+  }
+
+  .card.arrived{
+    border-color: var(--gold);
+    animation: arrivedPulse 1.8s ease-in-out infinite;
+  }
+  .card.arrived::before{ background: var(--gold); }
+  @keyframes arrivedPulse{
+    0%, 100%{ box-shadow: 0 0 0 2px var(--gold-dim); }
+    50%{ box-shadow: 0 0 0 6px rgba(245, 197, 24, 0.28); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .card.arrived{ animation: none; box-shadow: 0 0 0 2px var(--gold-dim); }
+  }
+
   .card-note{
     font-size: 14px; color: var(--text-primary);
     line-height: 1.5;
@@ -343,32 +398,34 @@
   }
 
   .complete-overlay{
-    position:absolute; inset:0;
-    background: linear-gradient(180deg, rgba(28,34,44,0) 0%, rgba(28,34,44,0.94) 40%, rgba(28,34,44,0.98) 100%);
-    display:flex; align-items:flex-end; justify-content:center; padding-bottom: 16px;
+    position:absolute; left:0; right:0; bottom:0;
+    background: linear-gradient(180deg, rgba(28,34,44,0) 0%, rgba(28,34,44,0.94) 45%, rgba(28,34,44,0.98) 100%);
+    display:flex; align-items:flex-end; justify-content:center;
+    padding: 22px 0 16px 0;
     opacity:0; pointer-events:none;
     transition: opacity .18s ease;
   }
-  .card:hover .complete-overlay, .card:focus-within .complete-overlay{ opacity:1; pointer-events:auto; }
-
-  /* Touch devices have no :hover — show the action row as a normal, always-visible
-     footer instead of an overlay so it doesn't depend on a hover state that never fires. */
+  /* The overlay box only covers its own bottom strip (sized to the button row + fade),
+     not the whole card, so it never visually darkens or blocks content above it like
+     the paid/ring buttons. Pointer-events are also gated to the button row itself. */
+  .complete-overlay .btn-row{ pointer-events: none; }
+  @media (hover: hover){
+    .card:hover .complete-overlay, .card:focus-within .complete-overlay{ opacity:1; }
+    .card:hover .complete-overlay .btn-row, .card:focus-within .complete-overlay .btn-row{ pointer-events:auto; }
+  }
   @media (hover: none){
-    .card{ padding-bottom: 18px; }
-    .complete-overlay{
-      position: static;
-      opacity: 1;
-      pointer-events: auto;
-      background: none;
-      padding: 12px 0 0 0;
-      margin-top: 12px;
-      border-top: 1px solid var(--border);
-      justify-content: flex-start;
-    }
-    .confirm-overlay{ position: static !important; border-top: none; margin-top: 12px; border-radius: 8px; padding: 12px 0; }
-    .btn-row{ padding: 0; }
+    .card:focus-within .complete-overlay{ opacity:1; }
+    .card:focus-within .complete-overlay .btn-row{ pointer-events:auto; }
   }
 
+  /* Touch devices have no reliable :hover — the action row is revealed by tapping the card
+     (toggling the .show-actions class via JS) instead of depending on a hover state. */
+  @media (hover: none){
+    .card.show-actions .complete-overlay{ opacity:1; }
+    .card.show-actions .complete-overlay .btn-row{ pointer-events:auto; }
+    .card:not(.show-actions):not(.editing){ cursor: pointer; }
+  }
+  
   .btn-row{ display:flex; align-items:center; gap:8px; width:100%; padding: 0 16px; }
   .btn-row.single{ justify-content: center; }
   .complete-btn{
@@ -398,6 +455,7 @@
   }
   .icon-btn:active{ transform: scale(0.94); }
   .icon-btn.edit-btn:hover{ border-color: var(--teal); color: var(--teal); background: var(--teal-dim); }
+  .icon-btn.return-btn:hover{ border-color: var(--amber); color: var(--amber); background: var(--amber-dim); }
   .icon-btn.delete-btn:hover{ border-color: var(--red); color: var(--red); background: var(--red-dim); }
 
   /* ---------- Inline edit form ---------- */
@@ -443,10 +501,14 @@
   }
 
   .confirm-overlay{
+    top: 0 !important;
+    bottom: 0 !important;
+    padding-top: 0 !important;
     opacity: 1 !important;
     pointer-events: auto !important;
     background: linear-gradient(180deg, rgba(28,34,44,0) 0%, rgba(46,20,21,0.92) 35%, rgba(46,20,21,0.98) 100%) !important;
   }
+  .confirm-overlay .btn-row{ pointer-events: auto !important; }
   .confirm-box{ width:100%; padding: 0 16px; text-align:center; }
   .confirm-text{
     margin: 0 0 10px 0;
@@ -577,6 +639,10 @@
               <input type="checkbox" id="urgent" name="urgent">
               <label for="urgent">Urgent</label>
             </div>
+            <div class="check-pill paid" id="pill-paid">
+              <input type="checkbox" id="paid" name="paid">
+              <label for="paid">Paid</label>
+            </div>
           </div>
           <button type="button" id="submit-order" class="submit-btn">Send to Dispatch</button>
         </div>
@@ -666,6 +732,8 @@
       note: row.note || '',
       delivery: row.delivery,
       urgent: row.urgent,
+      paid: !!row.paid,
+      arrived: !!row.arrived,
       status: row.status,
       createdAt: new Date(row.created_at),
       completedAt: row.completed_at ? new Date(row.completed_at) : null,
@@ -756,9 +824,11 @@
   const pickupInput = document.getElementById('pickup');
   const deliveryInput = document.getElementById('delivery');
   const urgentInput = document.getElementById('urgent');
+  const paidInput = document.getElementById('paid');
   const pillPickup = document.getElementById('pill-pickup');
   const pillDelivery = document.getElementById('pill-delivery');
   const pillUrgent = document.getElementById('pill-urgent');
+  const pillPaid = document.getElementById('pill-paid');
 
   const boardGrid = document.getElementById('board-grid');
   const boardEmpty = document.getElementById('board-empty');
@@ -777,6 +847,24 @@
 
   const toast = document.getElementById('toast');
   const toastText = document.getElementById('toast-text');
+
+  // ---------- Tap-to-reveal actions (touch devices) ----------
+  // Tapping a card's body (not a button/input inside it) toggles its action row.
+  // Tapping any other card or anywhere else collapses whatever was open.
+  document.addEventListener('click', function(e){
+    const card = e.target.closest('.card');
+
+    if(!card){
+      document.querySelectorAll('.card.show-actions').forEach(c => c.classList.remove('show-actions'));
+      return;
+    }
+    if(card.classList.contains('editing')) return;
+    if(e.target.closest('button, input, textarea, label, a')) return;
+
+    const wasOpen = card.classList.contains('show-actions');
+    document.querySelectorAll('.card.show-actions').forEach(c => { if(c !== card) c.classList.remove('show-actions'); });
+    card.classList.toggle('show-actions', !wasOpen);
+  });
 
   // ---------- Tab switching ----------
   let currentTab = 'home';
@@ -807,6 +895,10 @@
 
   urgentInput.addEventListener('change', () => syncPill(urgentInput, pillUrgent));
   pillUrgent.addEventListener('click', (e) => { if(e.target === pillUrgent){ urgentInput.checked = !urgentInput.checked; syncPill(urgentInput, pillUrgent);} });
+
+  paidInput.addEventListener('change', () => syncPill(paidInput, pillPaid));
+  pillPaid.addEventListener('click', (e) => { if(e.target === pillPaid){ paidInput.checked = !paidInput.checked; syncPill(paidInput, pillPaid);} });
+
   syncPill(pickupInput, pillPickup);
 
   // ---------- Notification sound ----------
@@ -833,10 +925,22 @@
     osc.start(t0);
     osc.stop(t0 + duration + 0.02);
   }
-  function playNotification(isUrgent){
+  // A fresh (or previously-unlocked) AudioContext starts 'suspended' until a user
+  // gesture resumes it — and resume() is asynchronous. Scheduling notes immediately
+  // after calling resume() (without waiting for it to actually finish) can silently
+  // drop the very first sound. This waits for resume to complete before playing.
+  function playWhenReady(fn){
     try{
       const ctx = getCtx();
-      if(ctx.state === 'suspended') ctx.resume();
+      if(ctx.state === 'suspended'){
+        ctx.resume().then(fn).catch(() => {});
+      } else {
+        fn();
+      }
+    } catch(err){ /* audio unavailable, fail silently */ }
+  }
+  function playNotification(isUrgent){
+    playWhenReady(() => {
       if(isUrgent){
         beep(880, 0.00, 0.16, 0.7);
         beep(880, 0.20, 0.16, 0.7);
@@ -847,7 +951,18 @@
         beep(990, 0.22, 0.18, 0.65);
         beep(1175, 0.44, 0.26, 0.7);
       }
-    } catch(err){ /* audio unavailable, fail silently */ }
+    });
+  }
+
+  function playRingSound(){
+    // Friendly two-note "ding-dong" doorbell chime, repeated once — distinct
+    // from the sharper order-notification beeps.
+    playWhenReady(() => {
+      beep(880, 0.00, 0.24, 0.7);
+      beep(659, 0.26, 0.32, 0.7);
+      beep(880, 0.68, 0.20, 0.6);
+      beep(659, 0.90, 0.28, 0.6);
+    });
   }
 
   // ---------- Toast ----------
@@ -884,6 +999,7 @@
       note: noteInput.value.trim(),
       delivery: deliveryInput.checked,
       urgent: urgentInput.checked,
+      paid: paidInput.checked,
     };
 
     submitBtn.disabled = true;
@@ -895,7 +1011,7 @@
       // The realtime INSERT event (received by this tab too) adds it to pending[],
       // renders the card, plays the notification, and shows the confirmation toast.
     } else {
-      const order = Object.assign({ id: nextId++, createdAt: new Date(), completedAt: null }, fields);
+      const order = Object.assign({ id: nextId++, createdAt: new Date(), completedAt: null, arrived: false }, fields);
       pending.unshift(order);
       sortPending();
       renderBoard(order.id);
@@ -913,6 +1029,8 @@
     selectType('pickup');
     urgentInput.checked = false;
     syncPill(urgentInput, pillUrgent);
+    paidInput.checked = false;
+    syncPill(paidInput, pillPaid);
   }
 
   function flashBoardTab(){
@@ -933,7 +1051,7 @@
   let confirmDeleteId = null;
 
   function formatTime(d){
-    return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    return d.toLocaleTimeString([], {month:'2-digit', day:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
   }
   function escapeHtml(str){
     const div = document.createElement('div');
@@ -962,6 +1080,10 @@
           '<div class="check-pill urgent' + (order.urgent ? ' checked' : '') + '" data-edit-pill="urgent">' +
             '<input type="checkbox" class="edit-urgent" id="edit-urgent-' + order.id + '"' + (order.urgent ? ' checked' : '') + '>' +
             '<label for="edit-urgent-' + order.id + '">Urgent</label>' +
+          '</div>' +
+          '<div class="check-pill paid' + (order.paid ? ' checked' : '') + '" data-edit-pill="paid">' +
+            '<input type="checkbox" class="edit-paid" id="edit-paid-' + order.id + '"' + (order.paid ? ' checked' : '') + '>' +
+            '<label for="edit-paid-' + order.id + '">Paid</label>' +
           '</div>' +
         '</div>' +
         '<div class="edit-actions">' +
@@ -1019,6 +1141,7 @@
       } else {
         overlay =
           '<div class="complete-overlay"><div class="btn-row single">' +
+            '<button class="icon-btn return-btn" data-id="' + order.id + '" title="Send back to Pick up / Delivery" aria-label="Send back to Pick up / Delivery">↩</button>' +
             '<button class="icon-btn delete-btn" data-id="' + order.id + '" title="Delete order" aria-label="Delete order">🗑</button>' +
           '</div></div>';
       }
@@ -1027,12 +1150,24 @@
       ? 'In · ' + formatTime(order.createdAt)
       : 'Done · ' + formatTime(order.completedAt);
 
+    const arrivedClass = (mode === 'board' && order.arrived) ? ' arrived' : '';
+
     return (
-      '<div class="card ' + typeClass + doneClass + '" data-id="' + order.id + '">' +
+      '<div class="card ' + typeClass + doneClass + arrivedClass + '" data-id="' + order.id + '">' +
         urgentStamp +
         '<div class="card-top">' +
           '<div class="invoice-no">' + escapeHtml(order.invoice) + '</div>' +
           '<div class="type-badge"><span class="dot"></span>' + typeLabel + '</div>' +
+        '</div>' +
+        '<div class="quick-actions">' +
+          '<button type="button" class="paid-badge ' + (order.paid ? 'is-paid' : 'is-unpaid') + '" data-id="' + order.id + '" title="Tap to toggle paid status">' +
+            '<span class="dot"></span>' + (order.paid ? 'Paid' : 'Unpaid') +
+          '</button>' +
+          (mode === 'board'
+            ? '<button type="button" class="ring-btn' + (order.arrived ? ' is-arrived' : '') + '" data-id="' + order.id + '" title="Notify that the customer has arrived">' +
+                (order.arrived ? '🔔 Customer Here' : '🔔 Ring') +
+              '</button>'
+            : '') +
         '</div>' +
         '<div class="card-note">' + escapeHtml(order.note) + '</div>' +
         '<div class="card-meta"><span>' + timeLabel + '</span></div>' +
@@ -1056,15 +1191,19 @@
     boardGrid.querySelectorAll('.save-btn').forEach(btn => btn.addEventListener('click', onSaveClick));
     boardGrid.querySelectorAll('.cancel-btn').forEach(btn => btn.addEventListener('click', onCancelClick));
     boardGrid.querySelectorAll('.confirm-delete-btn').forEach(btn => btn.addEventListener('click', onConfirmDeleteClick));
+    boardGrid.querySelectorAll('.paid-badge').forEach(btn => btn.addEventListener('click', onTogglePaidClick));
+    boardGrid.querySelectorAll('.ring-btn').forEach(btn => btn.addEventListener('click', onRingClick));
 
     // wire up mutually-exclusive Pick up / Delivery pills + Urgent pill inside any open edit form
     boardGrid.querySelectorAll('.card.editing').forEach(card => {
       const pickupChk = card.querySelector('.edit-pickup');
       const deliveryChk = card.querySelector('.edit-delivery');
       const urgentChk = card.querySelector('.edit-urgent');
+      const paidChk = card.querySelector('.edit-paid');
       const pickupPill = card.querySelector('[data-edit-pill="pickup"]');
       const deliveryPill = card.querySelector('[data-edit-pill="delivery"]');
       const urgentPill = card.querySelector('[data-edit-pill="urgent"]');
+      const paidPill = card.querySelector('[data-edit-pill="paid"]');
 
       function setType(isDelivery){
         pickupChk.checked = !isDelivery;
@@ -1079,6 +1218,9 @@
 
       urgentChk.addEventListener('change', () => urgentPill.classList.toggle('checked', urgentChk.checked));
       urgentPill.addEventListener('click', (e) => { if(e.target === urgentPill){ urgentChk.checked = !urgentChk.checked; urgentPill.classList.toggle('checked', urgentChk.checked); } });
+
+      paidChk.addEventListener('change', () => paidPill.classList.toggle('checked', paidChk.checked));
+      paidPill.addEventListener('click', (e) => { if(e.target === paidPill){ paidChk.checked = !paidChk.checked; paidPill.classList.toggle('checked', paidChk.checked); } });
     });
   }
 
@@ -1091,6 +1233,8 @@
     completedGrid.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', onDeleteClick));
     completedGrid.querySelectorAll('.confirm-delete-btn').forEach(btn => btn.addEventListener('click', onConfirmDeleteClick));
     completedGrid.querySelectorAll('.cancel-btn').forEach(btn => btn.addEventListener('click', onCancelClick));
+    completedGrid.querySelectorAll('.paid-badge').forEach(btn => btn.addEventListener('click', onTogglePaidClick));
+    completedGrid.querySelectorAll('.return-btn').forEach(btn => btn.addEventListener('click', onReturnClick));
 
     clearAllBtn.disabled = completed.length === 0;
     if(completed.length === 0 && confirmClearAll){
@@ -1102,6 +1246,48 @@
     }
   }
 
+  async function onTogglePaidClick(e){
+    const id = parseInt(e.currentTarget.dataset.id, 10);
+    const order = pending.find(o => o.id === id) || completed.find(o => o.id === id);
+    if(!order) return;
+    const newPaid = !order.paid;
+
+    if(db){
+      const ok = await dbUpdateOrder(id, { paid: newPaid });
+      if(!ok) return;
+      // realtime UPDATE event refreshes the badge for every connected tab
+      return;
+    }
+
+    order.paid = newPaid;
+    renderBoard();
+    renderCompleted();
+  }
+
+  async function onRingClick(e){
+    const id = parseInt(e.currentTarget.dataset.id, 10);
+    const order = pending.find(o => o.id === id);
+    if(!order) return;
+    const newArrived = !order.arrived;
+
+    if(newArrived){
+      playRingSound();
+      showToast('🔔 Customer arrived for <span class="invoice-no">' + escapeHtml(order.invoice) + '</span>');
+    } else {
+      showToast('Cleared arrival flag for <span class="invoice-no">' + escapeHtml(order.invoice) + '</span>');
+    }
+
+    if(db){
+      const ok = await dbUpdateOrder(id, { arrived: newArrived });
+      if(!ok) return;
+      // realtime UPDATE event refreshes the card's highlight for every connected tab
+      return;
+    }
+
+    order.arrived = newArrived;
+    renderBoard();
+  }
+
   async function onCompleteClick(e){
     const id = parseInt(e.currentTarget.dataset.id, 10);
     const idx = pending.findIndex(o => o.id === id);
@@ -1111,7 +1297,7 @@
     const completedAt = new Date();
 
     if(db){
-      const ok = await dbUpdateOrder(id, { status: 'completed', completed_at: completedAt.toISOString() });
+      const ok = await dbUpdateOrder(id, { status: 'completed', completed_at: completedAt.toISOString(), arrived: false });
       if(!ok){ if(card) card.classList.remove('completing'); return; }
       // realtime UPDATE event moves it from pending[] to completed[] and re-renders
       return;
@@ -1122,7 +1308,36 @@
       if(stillIdx === -1) return;
       const order = pending.splice(stillIdx, 1)[0];
       order.completedAt = completedAt;
+      order.arrived = false;
       completed.unshift(order);
+      renderBoard();
+      renderCompleted();
+    }, 340);
+  }
+
+  async function onReturnClick(e){
+    const id = parseInt(e.currentTarget.dataset.id, 10);
+    const order = completed.find(o => o.id === id);
+    if(!order) return;
+    const card = completedGrid.querySelector('[data-id="' + id + '"]');
+    if(card) card.classList.add('completing');
+
+    if(db){
+      const ok = await dbUpdateOrder(id, { status: 'pending', completed_at: null });
+      if(!ok){ if(card) card.classList.remove('completing'); return; }
+      showToast('Order <span class="invoice-no">' + escapeHtml(order.invoice) + '</span> sent back to dispatch');
+      // realtime UPDATE event moves it from completed[] back to pending[] and re-renders
+      return;
+    }
+
+    showToast('Order <span class="invoice-no">' + escapeHtml(order.invoice) + '</span> sent back to dispatch');
+    setTimeout(() => {
+      const idx = completed.findIndex(o => o.id === id);
+      if(idx === -1) return;
+      const returned = completed.splice(idx, 1)[0];
+      returned.completedAt = null;
+      pending.unshift(returned);
+      sortPending();
       renderBoard();
       renderCompleted();
     }, 340);
@@ -1163,9 +1378,10 @@
     const noteVal = card.querySelector('.edit-note').value.trim();
     const deliveryVal = card.querySelector('.edit-delivery').checked;
     const urgentVal = card.querySelector('.edit-urgent').checked;
+    const paidVal = card.querySelector('.edit-paid').checked;
 
     if(db){
-      const ok = await dbUpdateOrder(id, { invoice: invoiceVal, note: noteVal, delivery: deliveryVal, urgent: urgentVal });
+      const ok = await dbUpdateOrder(id, { invoice: invoiceVal, note: noteVal, delivery: deliveryVal, urgent: urgentVal, paid: paidVal });
       if(!ok) return;
       editingId = null;
       showToast('Order <span class="invoice-no">' + escapeHtml(invoiceVal) + '</span> updated');
@@ -1177,6 +1393,7 @@
     order.note = noteVal;
     order.delivery = deliveryVal;
     order.urgent = urgentVal;
+    order.paid = paidVal;
 
     editingId = null;
     sortPending();

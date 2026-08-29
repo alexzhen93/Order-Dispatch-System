@@ -7,10 +7,17 @@ create table if not exists orders (
   note text not null default '',
   delivery boolean not null default false,
   urgent boolean not null default false,
+  paid boolean not null default false,
+  arrived boolean not null default false,
   status text not null default 'pending' check (status in ('pending', 'completed')),
   created_at timestamptz not null default now(),
   completed_at timestamptz
 );
+
+-- If you already created this table before the "paid"/"arrived" columns existed,
+-- run these once to add them (safe to run even if the columns are already there):
+alter table orders add column if not exists paid boolean not null default false;
+alter table orders add column if not exists arrived boolean not null default false;
 
 -- Helpful index for the common "pending orders, most urgent/newest first" query
 create index if not exists orders_status_created_idx on orders (status, created_at desc);
