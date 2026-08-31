@@ -376,9 +376,14 @@
     font-size: 14px; color: var(--text-primary);
     line-height: 1.5;
     margin: 0 0 14px 0;
-    min-height: 20px;
+    height: calc(1.5em * 4);
     white-space: pre-wrap;
     word-break: break-word;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
   }
   .card-note:empty::before{ content:"No note"; color: var(--text-faint); font-style:italic; }
 
@@ -798,6 +803,10 @@
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
         const order = mapRow(payload.new);
+        const previous = pending.find(o => o.id === order.id) || completed.find(o => o.id === order.id);
+        const justArrived = order.arrived && (!previous || !previous.arrived);
+        const justCleared = previous && previous.arrived && !order.arrived;
+
         pending = pending.filter(o => o.id !== order.id);
         completed = completed.filter(o => o.id !== order.id);
         if(order.status === 'completed'){
@@ -808,6 +817,13 @@
         }
         renderBoard();
         renderCompleted();
+
+        if(justArrived){
+          playRingSound();
+          showToast('🔔 Customer arrived for <span class="invoice-no">' + escapeHtml(order.invoice) + '</span>');
+        } else if(justCleared){
+          showToast('Cleared arrival flag for <span class="invoice-no">' + escapeHtml(order.invoice) + '</span>');
+        }
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'orders' }, (payload) => {
         const id = payload.old.id;
@@ -1280,19 +1296,20 @@
     const order = pending.find(o => o.id === id);
     if(!order) return;
     const newArrived = !order.arrived;
+    if(db){
+      const ok = await dbUpdateOrder(id, { arrived: newArrived });
+      if(!ok) return;
+      // The realtime UPDATE event (received by every connected tab, including this
+      // one) plays the ring sound, shows the toast, and refreshes the highlight —
+      // so everyone hears the bell, not just whoever clicked it.
+      return;
+    }
 
     if(newArrived){
       playRingSound();
       showToast('🔔 Customer arrived for <span class="invoice-no">' + escapeHtml(order.invoice) + '</span>');
     } else {
       showToast('Cleared arrival flag for <span class="invoice-no">' + escapeHtml(order.invoice) + '</span>');
-    }
-
-    if(db){
-      const ok = await dbUpdateOrder(id, { arrived: newArrived });
-      if(!ok) return;
-      // realtime UPDATE event refreshes the card's highlight for every connected tab
-      return;
     }
 
     order.arrived = newArrived;
