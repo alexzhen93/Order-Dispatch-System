@@ -60,8 +60,11 @@
     padding: 18px 24px 0 24px;
   }
   .brand{
-    display:flex; align-items:baseline; gap:10px;
+    display:flex; align-items:center; justify-content:space-between;
     margin-bottom: 14px;
+  }
+  .brand-info{
+    display:flex; align-items:baseline; gap:10px;
   }
   .brand-mark{
     width:10px; height:10px; border-radius:2px;
@@ -82,6 +85,16 @@
     color: var(--text-faint);
     letter-spacing: 0.05em;
   }
+  .signout-btn{
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px; font-weight:600; letter-spacing:0.03em;
+    transition: border-color .15s ease, color .15s ease, background .15s ease;
+  }
+  .signout-btn:hover{ border-color: var(--red); color: var(--red); background: var(--red-dim); }
 
   .tabs{ display:flex; gap: 4px; }
   .tab{
@@ -129,6 +142,27 @@
 
   /* ---------- Home / intake ticket ---------- */
   .intake-wrap{ display:flex; justify-content:center; padding-top: 16px; }
+
+  .auth-gate{
+    position: fixed; inset: 0; z-index: 200;
+    display:flex; align-items:center; justify-content:center;
+    padding: 24px;
+    background:
+      linear-gradient(var(--bg-grid) 1px, transparent 1px) 0 0 / 100% 28px,
+      var(--bg);
+  }
+  .auth-card .field.error input{ border-color: var(--red); box-shadow: 0 0 0 3px var(--red-dim); }
+  .remember-pill{ margin-bottom: 20px; }
+  .remember-pill label{ font-size: 14px; font-weight: 600; cursor:pointer; user-select:none; }
+  .auth-status{
+    margin: 14px 0 0 0;
+    font-size: 13px;
+    text-align: center;
+    min-height: 18px;
+  }
+  .auth-status.success{ color: var(--teal); }
+  .auth-status.error{ color: var(--red); }
+  .submit-btn:disabled{ opacity: .55; pointer-events: none; }
   .ticket{
     width: 100%; max-width: 460px;
     background: var(--surface);
@@ -175,7 +209,7 @@
     color: var(--text-muted);
     margin-bottom: 8px;
   }
-  .field input[type=text], .field textarea{
+  .field input[type=text], .field input[type=email], .field textarea{
     width:100%;
     background: var(--bg);
     border: 1px solid var(--border);
@@ -183,6 +217,7 @@
     color: var(--text-primary);
     padding: 12px 14px;
     font-size: 15px;
+    font-family: var(--font-body);
     transition: border-color .15s ease, box-shadow .15s ease;
   }
   .field input[type=text]{
@@ -196,6 +231,7 @@
     border-color: var(--teal);
     box-shadow: 0 0 0 3px var(--teal-dim);
   }
+  .field input[type=email]::placeholder{ color: var(--text-faint); }
   .field .hint{ font-size:12px; color: var(--red); margin-top:6px; display:none; }
   .field.error input{ border-color: var(--red); box-shadow: 0 0 0 3px var(--red-dim); }
   .field.error .hint{ display:block; }
@@ -309,22 +345,7 @@
   .card:hover{ border-color: var(--border); transform: translateY(-2px); }
 
   .card-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom: 10px; }
-  .invoice-no{ 
-    font-family: var(--font-mono); 
-    font-size: 20px; 
-    font-weight:700; 
-    letter-spacing: 0.02em;   
-    line-height: 1.5;
-    margin: 0 0 14px 0;  
-    height: calc(1.5em * 3); 
-    white-space: pre-wrap;
-    word-break: break-word;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
-  }
+  .invoice-no{ font-family: var(--font-mono); font-size: 20px; font-weight:700; letter-spacing: 0.02em; }
   .type-badge{
     display:flex; align-items:center; gap:6px;
     font-size: 11px; font-weight:600; text-transform:uppercase; letter-spacing:0.04em;
@@ -622,12 +643,15 @@
 </head>
 <body>
 
-<div class="topbar">
+<div class="topbar" style="display:none;">
   <div class="topbar-inner">
     <div class="brand">
-      <div class="brand-mark"></div>
-      <h1>Dispatch</h1>
-      <span>ORDER SUBMISSION &amp; FULFILLMENT</span>
+      <div class="brand-info">
+        <div class="brand-mark"></div>
+        <h1>Dispatch</h1>
+        <span>ORDER SUBMISSION &amp; FULFILLMENT</span>
+      </div>
+      <button type="button" class="signout-btn" id="signout-btn" title="Sign out" style="display:none;">Sign out</button>
     </div>
     <nav class="tabs">
       <button class="tab active" data-tab="home">Home</button>
@@ -637,7 +661,29 @@
   </div>
 </div>
 
-<main>
+<div class="auth-gate" id="auth-gate" style="display:none;">
+  <div class="ticket auth-card">
+    <div class="ticket-head">
+      <p class="eyebrow">Staff sign-in</p>
+      <h2>Dispatch</h2>
+    </div>
+    <div class="ticket-body">
+      <div class="field" id="field-auth-email">
+        <label for="auth-email">Company email</label>
+        <input type="email" id="auth-email" placeholder="you@example.com" autocomplete="email">
+        <p class="hint" id="auth-email-hint">Please enter a valid email address.</p>
+      </div>
+      <div class="check-pill remember-pill checked" id="pill-remember">
+        <input type="checkbox" id="auth-remember" checked>
+        <label for="auth-remember">Remember this device for 30 days</label>
+      </div>
+      <button type="button" id="auth-submit" class="submit-btn">Send Magic Link</button>
+      <p class="auth-status" id="auth-status"></p>
+    </div>
+  </div>
+</div>
+
+<main style="display:none;">
 
   <!-- HOME -->
   <section class="view active" id="view-home">
@@ -745,6 +791,200 @@
 
   if(!db){
     console.warn('Supabase is not configured — running in local-only demo mode. Orders will not persist across reloads or sync across devices. See the config block at the top of the script to connect a real database.');
+  }
+
+  // ---------- Auth (allowlisted-email gate) ----------
+  // Only exact email addresses present in the `allowed_emails` table (see schema.sql)
+  // can use the app — a real allowlist, not a domain check, since many small teams
+  // use a shared provider like gmail.com where a domain check would let in anyone.
+  const authGate = document.getElementById('auth-gate');
+  const authEmailInput = document.getElementById('auth-email');
+  const authEmailField = document.getElementById('field-auth-email');
+  const authSubmitBtn = document.getElementById('auth-submit');
+  const authStatus = document.getElementById('auth-status');
+  const authRememberInput = document.getElementById('auth-remember');
+  const pillRemember = document.getElementById('pill-remember');
+  const signoutBtn = document.getElementById('signout-btn');
+  const topbarEl = document.querySelector('.topbar');
+  const mainEl = document.querySelector('main');
+
+  const REMEMBER_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+  const REMEMBER_UNTIL_KEY = 'dispatch_remember_until';
+  const SESSION_ACTIVE_KEY = 'dispatch_session_active';
+
+  authRememberInput.addEventListener('change', () => pillRemember.classList.toggle('checked', authRememberInput.checked));
+  pillRemember.addEventListener('click', (e) => { if(e.target === pillRemember){ authRememberInput.checked = !authRememberInput.checked; pillRemember.classList.toggle('checked', authRememberInput.checked); } });
+
+  let appStarted = false; // guards against re-running startup logic on repeat auth events
+
+  // The allowlist can only be checked once signed in (the RLS policy on
+  // allowed_emails requires a matching authenticated JWT), so this always runs
+  // after a magic-link login, not before sending one.
+  async function isEmailAllowed(email){
+    try{
+      const { data, error } = await db.from('allowed_emails').select('email').eq('email', email).maybeSingle();
+      if(error){ console.error(error); return false; }
+      return !!data;
+    } catch(err){
+      console.error(err);
+      return false;
+    }
+  }
+
+  function showAuthGate(){
+    authGate.style.display = 'flex';
+    topbarEl.style.display = 'none';
+    mainEl.style.display = 'none';
+    signoutBtn.style.display = 'none';
+  }
+
+  function showApp(userEmail){
+    authGate.style.display = 'none';
+    topbarEl.style.display = '';
+    mainEl.style.display = '';
+    signoutBtn.style.display = userEmail ? '' : 'none';
+    signoutBtn.title = userEmail ? ('Signed in as ' + userEmail + ' — sign out') : 'Sign out';
+  }
+
+  function setAuthStatus(message, kind){
+    authStatus.textContent = message || '';
+    authStatus.className = 'auth-status' + (kind ? ' ' + kind : '');
+  }
+
+  async function sendMagicLink(){
+    const email = authEmailInput.value.trim();
+    if(!email || !authEmailInput.checkValidity()){
+      authEmailField.classList.add('error');
+      authEmailInput.focus();
+      return;
+    }
+    authEmailField.classList.remove('error');
+    authSubmitBtn.disabled = true;
+    setAuthStatus('Sending link…');
+
+    // Stored now (not after login) since the magic-link redirect reloads the page,
+    // which would otherwise lose track of this checkbox's state.
+    try{ localStorage.setItem('dispatch_remember_choice', authRememberInput.checked ? '1' : '0'); } catch(err){ /* storage unavailable */ }
+
+    const { error } = await db.auth.signInWithOtp({
+      email: email,
+      options: { emailRedirectTo: window.location.href }
+    });
+
+    authSubmitBtn.disabled = false;
+    if(error){
+      console.error(error);
+      setAuthStatus('Could not send the link — please try again.', 'error');
+      return;
+    }
+    setAuthStatus('If ' + email + ' is on the approved list, a sign-in link is on its way — check your inbox.', 'success');
+  }
+
+  function clearRememberState(){
+    try{
+      localStorage.removeItem(REMEMBER_UNTIL_KEY);
+      localStorage.removeItem('dispatch_remember_choice');
+      sessionStorage.removeItem(SESSION_ACTIVE_KEY);
+    } catch(err){ /* storage unavailable */ }
+  }
+
+  async function handleSignOut(){
+    signoutBtn.disabled = true;
+    clearRememberState();
+    await db.auth.signOut();
+    signoutBtn.disabled = false;
+    // onAuthStateChange below reacts to the sign-out and shows the auth gate again.
+  }
+
+  // Supabase's own refresh token would otherwise keep someone signed in
+  // indefinitely. This layer caps that at 30 days when "remember this device"
+  // was checked, and — when it wasn't — requires signing in again on every new
+  // browser session (sessionStorage clears when the browser/tab fully closes).
+  function isDeviceStillTrusted(){
+    let rememberUntil = null;
+    let sessionActive = false;
+    try{
+      rememberUntil = localStorage.getItem(REMEMBER_UNTIL_KEY);
+      sessionActive = sessionStorage.getItem(SESSION_ACTIVE_KEY) === '1';
+    } catch(err){
+      return true; // storage unavailable (e.g. private browsing) — don't block sign-in over it
+    }
+
+    if(rememberUntil){
+      return Date.now() < parseInt(rememberUntil, 10);
+    }
+    return sessionActive;
+  }
+
+  function markDeviceTrusted(){
+    try{
+      const rememberChoice = localStorage.getItem('dispatch_remember_choice');
+      if(rememberChoice === '0'){
+        localStorage.removeItem(REMEMBER_UNTIL_KEY);
+      } else {
+        // Default to remembering (checkbox defaults checked) even if this session
+        // started from an existing cookie/session rather than a fresh magic-link click.
+        localStorage.setItem(REMEMBER_UNTIL_KEY, String(Date.now() + REMEMBER_MS));
+      }
+      sessionStorage.setItem(SESSION_ACTIVE_KEY, '1');
+    } catch(err){ /* storage unavailable */ }
+  }
+
+  async function handleSession(session, event){
+    const email = session && session.user ? session.user.email : null;
+
+    if(!email){
+      showAuthGate();
+      return;
+    }
+
+    // A fresh interactive sign-in (just completed the magic-link flow) always
+    // proceeds to the allowlist check below — it already proves the person just
+    // authenticated, so the 30-day trust window doesn't apply here. That window
+    // only gates *restored* sessions found on page load (event is undefined for
+    // the initial getSession() check, or 'INITIAL_SESSION'/'TOKEN_REFRESHED' from
+    // Supabase silently restoring/renewing a session in the background).
+    const isFreshSignIn = (event === 'SIGNED_IN');
+
+    if(!isFreshSignIn && !isDeviceStillTrusted()){
+      // Either the 30-day remembered window ran out, or "remember" wasn't
+      // checked and this is a new browser session — require signing in again.
+      clearRememberState();
+      db.auth.signOut();
+      showAuthGate();
+      setAuthStatus('Your session expired. Please sign in again.', 'error');
+      return;
+    }
+
+    setAuthStatus('Checking access…');
+    const allowed = await isEmailAllowed(email);
+
+    if(allowed){
+      markDeviceTrusted();
+      showApp(email);
+      if(!appStarted){
+        appStarted = true;
+        startApp();
+      }
+      return;
+    }
+
+    // Signed in successfully, but not on the allowlist — kick them back out.
+    clearRememberState();
+    db.auth.signOut();
+    showAuthGate();
+    setAuthStatus('That email isn\'t on the approved list. Ask an admin to add it.', 'error');
+  }
+
+  function initAuth(){
+    authSubmitBtn.addEventListener('click', sendMagicLink);
+    authEmailInput.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter'){ e.preventDefault(); sendMagicLink(); }
+    });
+    signoutBtn.addEventListener('click', handleSignOut);
+
+    db.auth.getSession().then(({ data }) => handleSession(data.session));
+    db.auth.onAuthStateChange((event, session) => handleSession(session, event));
   }
 
   // ---------- In-memory state ----------
@@ -981,6 +1221,7 @@
       }
     } catch(err){ /* audio unavailable, fail silently */ }
   }
+
   function playNotification(isUrgent){
     playWhenReady(() => {
       if(isUrgent){
@@ -1093,7 +1334,7 @@
   let confirmDeleteId = null;
 
   function formatTime(d){
-    return d.toLocaleTimeString([], {weekday:'short', month:'2-digit', day:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+    return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
   }
   function escapeHtml(str){
     const div = document.createElement('div');
@@ -1311,6 +1552,7 @@
     const order = pending.find(o => o.id === id);
     if(!order) return;
     const newArrived = !order.arrived;
+
     if(db){
       const ok = await dbUpdateOrder(id, { arrived: newArrived });
       if(!ok) return;
@@ -1508,21 +1750,30 @@
   });
 
   // ---------- Init ----------
-  if(db){
-    dbFetchAll().then(rows => {
-      if(rows){
-        pending = rows.filter(o => o.status !== 'completed');
-        completed = rows.filter(o => o.status === 'completed');
-        sortPending();
-        completed.sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0));
-      }
+  function startApp(){
+    if(db){
+      dbFetchAll().then(rows => {
+        if(rows){
+          pending = rows.filter(o => o.status !== 'completed');
+          completed = rows.filter(o => o.status === 'completed');
+          sortPending();
+          completed.sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0));
+        }
+        renderBoard();
+        renderCompleted();
+      });
+      subscribeRealtime();
+    } else {
       renderBoard();
       renderCompleted();
-    });
-    subscribeRealtime();
+    }
+  }
+
+  if(db){
+    initAuth();
   } else {
-    renderBoard();
-    renderCompleted();
+    showApp(null); // no login needed in local-only demo mode
+    startApp();
   }
 })();
 </script>
