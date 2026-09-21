@@ -25,15 +25,46 @@ create index if not exists orders_status_created_idx on orders (status, created_
 -- Row Level Security
 alter table orders enable row level security;
 
--- NOTE: this policy allows any holder of the anon/public key to read and write freely.
--- That's fine for an internal tool or a prototype, but before exposing this publicly
--- you should add real authentication (Supabase Auth) and scope this policy to
--- authenticated users, e.g. `using (auth.role() = 'authenticated')`.
+-- Table of specific email addresses allowed to use the app. Used instead of a
+-- domain check (like '%@company.com') because a shared provider domain such as
+-- gmail.com, yahoo.com, or outlook.com would let in anyone in the world with an
+-- account there, not just your team.
+create table if not exists allowed_emails (
+  email text primary key
+);
+
+alter table allowed_emails enable row level security;
+
+-- A signed-in user may only ever check for their OWN email in this table (never
+-- list or see anyone else's), which is enough for the app to confirm they're
+-- authorized without exposing the full staff list to every logged-in user.
+drop policy if exists "Users can check their own email" on allowed_emails;
+create policy "Users can check their own email" on allowed_emails
+  for select
+  using (auth.role() = 'authenticated' and email = (auth.jwt() ->> 'email'));
+
+-- Add every team member's exact email address here. Edit this list and re-run
+-- just this statement whenever someone joins or leaves — everything else in this
+-- file only needs to be run once. Safe to re-run (skips emails already present).
+insert into allowed_emails (email) values
+  ('alice@gmail.com'),
+  ('bob@gmail.com')
+on conflict (email) do nothing;
+
+-- Only signed-in users whose verified email appears in allowed_emails can read or write.
 drop policy if exists "Allow all access" on orders;
-create policy "Allow all access" on orders
+drop policy if exists "Company domain access" on orders;
+drop policy if exists "Allowlisted users access" on orders;
+create policy "Allowlisted users access" on orders
   for all
-  using (true)
-  with check (true);
+  using (
+    auth.role() = 'authenticated'
+    and exists (select 1 from allowed_emails ae where ae.email = (auth.jwt() ->> 'email'))
+  )
+  with check (
+    auth.role() = 'authenticated'
+    and exists (select 1 from allowed_emails ae where ae.email = (auth.jwt() ->> 'email'))
+  );
 
 -- Enable realtime updates so all connected browsers see new/updated/deleted orders live
 alter publication supabase_realtime add table orders;
