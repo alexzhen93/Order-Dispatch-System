@@ -393,6 +393,11 @@
     align-items: start;
   }
 
+  /* Everything shown on a card (and on a group heading) is upper case — labels, badges, times,
+     buttons as well as the typed details. Editing fields are left alone so people see what they type. */
+  .card, .customer-group-head{ text-transform: uppercase; }
+  .card input, .card textarea, .card select{ text-transform: none; }
+
   /* A cluster of orders sharing the same Name/Company, shown together so
      back-of-house can see one customer has several invoices at a glance.
      Purely a display grouping — spans both card columns of its section. */
@@ -1045,7 +1050,6 @@
   .modal-sub{ margin: 0 0 16px 0; font-size: 13px; color: var(--text-muted); line-height:1.5; }
 
   .proof-preview-wrap{
-    position: relative;
     background: var(--surface);
     border: 1px dashed var(--border);
     border-radius: 10px;
@@ -1059,17 +1063,6 @@
     color: var(--text-faint); font-size: 13px;
   }
   .proof-placeholder-icon{ font-size: 26px; opacity:.6; }
-  /* Only shown when the order already has a stored proof photo */
-  .proof-delete-btn{
-    position:absolute; top:8px; right:8px; z-index:2;
-    background: rgba(10,12,16,.82); color: var(--red); border:1px solid var(--red);
-    border-radius:6px; padding:6px 11px; font-size:12px; font-weight:600; cursor:pointer;
-    font-family: var(--font-body);
-    transition: background .15s ease, color .15s ease;
-  }
-  .proof-delete-btn:hover, .proof-delete-btn:focus-visible{ background: var(--red); color:#fff; outline:none; }
-  .proof-delete-btn.armed{ background: var(--red); color:#fff; }
-  .proof-delete-btn:disabled{ opacity:.6; cursor:default; }
   .proof-preview-img{ width:100%; max-height: 320px; object-fit: contain; display:block; }
 
   .camera-view{ margin-bottom: 12px; }
@@ -1129,6 +1122,10 @@
   }
   .modal-btn-ghost{ background:none; color: var(--text-muted); }
   .modal-btn-ghost:hover{ color: var(--text-primary); border-color: var(--text-faint); }
+  /* Only shown when the order already has a stored proof photo */
+  .modal-btn-danger{ background:none; border-color: var(--red); color: var(--red); }
+  .modal-btn-danger:hover:not(:disabled), .modal-btn-danger:focus-visible, .modal-btn-danger.armed{ background: var(--red); color:#fff; outline:none; }
+  .modal-btn-danger:disabled{ opacity:.6; cursor:default; }
   .modal-btn-secondary{ background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
   .modal-btn-secondary:hover{ filter: brightness(1.1); }
   .modal-btn-primary{ background: var(--teal-dim); border-color: var(--teal); color: var(--teal); }
@@ -1372,7 +1369,6 @@
         <span>No photo selected</span>
       </div>
       <img class="proof-preview-img" id="proof-preview-img" alt="Proof photo" style="display:none;">
-      <button type="button" class="proof-delete-btn" id="proof-delete-btn" style="display:none;" aria-label="Delete the stored proof photo">🗑 Delete photo</button>
     </div>
 
     <div class="camera-view" id="camera-view" style="display:none;">
@@ -1394,6 +1390,7 @@
 
     <div class="proof-modal-actions" id="proof-modal-actions">
       <button type="button" class="modal-btn modal-btn-ghost" id="proof-cancel-btn">Cancel</button>
+      <button type="button" class="modal-btn modal-btn-danger" id="proof-delete-btn" style="display:none;" aria-label="Delete the stored proof photo">🗑 Delete photo</button>
       <button type="button" class="modal-btn modal-btn-secondary" id="proof-later-btn">Upload Later</button>
       <button type="button" class="modal-btn modal-btn-primary" id="proof-save-btn" disabled>Complete</button>
     </div>
@@ -2825,9 +2822,9 @@
     // top line that appears (company name, else freight/pick-up name, else delivery address),
     // so it lines up with whatever is shown first.
     const infoLines = [];
-    if(order.companyName) infoLines.push('🏢 ' + order.companyName);
-    if(order.company) infoLines.push((order.delivery ? '📦 ' : '👤 ') + order.company);
-    if(order.delivery && order.address) infoLines.push('📍 ' + order.address);
+    if(order.companyName) infoLines.push('🏢 ' + displayText(order.companyName, 'name'));
+    if(order.company) infoLines.push((order.delivery ? '📦 ' : '👤 ') + displayText(order.company, 'name'));
+    if(order.delivery && order.address) infoLines.push('📍 ' + displayText(order.address, 'address'));
     if(!infoLines.length && beforeHtml) infoLines.push('');
     const infoLinesHtml = infoLines.map((text, idx) =>
       '<div class="card-info-row"><span class="card-info-who">' + escapeHtml(text) + '</span>' +
@@ -2854,7 +2851,7 @@
               '</button>'
             : '') +
         '</div>' +
-        '<div class="card-note" title="' + escapeAttr(order.note) + '">' + escapeHtml(order.note) + '</div>' +
+        '<div class="card-note" title="' + escapeAttr(displayText(order.note, 'note')) + '">' + escapeHtml(displayText(order.note, 'note')) + '</div>' +
         '<div class="card-meta"><span>' + timeLabel + '</span></div>' +
         overlay +
       '</div>'
@@ -2864,7 +2861,7 @@
   function completedRowHtml(order){
     const typeLabel = order.delivery ? 'Delivery' : 'Pick up';
     const typeClass = order.delivery ? 'type-delivery' : 'type-pickup';
-    const companyHtml = order.companyName ? escapeHtml(order.companyName) : '<span class="cell-empty">—</span>';
+    const companyHtml = order.companyName ? escapeHtml(displayText(order.companyName, 'name')) : '<span class="cell-empty">—</span>';
     const proofIconHtml = order.proofImage
       ? '<button type="button" class="proof-icon-btn has-proof" data-id="' + order.id + '" data-action="view-proof" title="View proof photo" aria-label="View proof photo"><span class="proof-icon-glyph">📷</span></button>'
       : (order.proofPending
@@ -2890,7 +2887,7 @@
       '<tr class="completed-row" data-id="' + order.id + '">' +
         '<td class="cell-invoice"><span class="invoice-no">' + escapeHtml(order.invoice) + '</span></td>' +
         '<td><span class="type-badge ' + typeClass + '"><span class="dot"></span>' + typeLabel + '</span></td>' +
-        '<td class="cell-company" title="' + escapeAttr(order.companyName || '') + '">' + companyHtml + '</td>' +
+        '<td class="cell-company" title="' + escapeAttr(displayText(order.companyName, 'name')) + '">' + companyHtml + '</td>' +
         '<td>' +
           '<button type="button" class="paid-badge ' + (order.paid ? 'is-paid' : 'is-unpaid') + '" data-id="' + order.id + '" title="Tap to toggle paid status">' +
             '<span class="dot"></span>' + (order.paid ? 'Paid' : 'Unpaid') +
@@ -2907,44 +2904,273 @@
   // can see at a glance that one customer has several invoices waiting. Each
   // order stays a fully separate record in pending[]/the database; this just
   // decides how to arrange their cards. Orders are grouped only when they share
-  // a non-blank Name/Company value, within the already-sorted list (so a group
-  // still surfaces near the top if any of its orders is urgent or arrived).
-  // Deliveries group by delivery address; pick ups group by pick up person name.
+  // a non-blank value, within the already-sorted list (so a group still surfaces
+  // near the top if any of its orders is urgent or arrived).
+  //   Pick ups   group by pick up person name.
+  //   Deliveries group by delivery address OR by Freight / Cargo — an order that
+  //              matches another on either one lands in the same group. Addresses are
+  //              compared by meaning, not exact spelling (see parseAddress).
   // Whitespace and letter case are ignored when comparing.
-  function groupKey(o){
-    const v = o.delivery ? o.address : o.company;
-    return (v || '').trim().replace(/\s+/g, ' ').toLowerCase();
+  function normKey(v){ return (v || '').trim().replace(/\s+/g, ' ').toLowerCase(); }
+  function cleanText(v){ return (v || '').trim().replace(/\s+/g, ' '); }
+  // ---------- Recognising the same address written differently ----------
+  // "7102 NW 50th ST MIAMI FL 33166" and "7102 NW 50 st. Miami, FL 33166" are the same place.
+  // Addresses are read into parts: the street line (house number + street name + street type,
+  // with abbreviations, N/S/E/W directions and ordinal endings like 50th/50 made uniform),
+  // plus city, state and ZIP when they were typed. Two addresses match when the street line is
+  // identical (a missing street type like "st" is allowed) and any city / state / ZIP that BOTH have also agree — a missing city or ZIP on one
+  // side is not treated as a difference. Suite / apt / unit numbers are ignored (same building).
+  const STREET_TYPES = {
+    st:'st', str:'st', street:'st', ave:'ave', av:'ave', aven:'ave', avenue:'ave',
+    blvd:'blvd', blv:'blvd', boulevard:'blvd', rd:'rd', road:'rd', dr:'dr', drv:'dr', drive:'dr',
+    ln:'ln', lane:'ln', ct:'ct', crt:'ct', court:'ct', pl:'pl', place:'pl',
+    ter:'ter', terr:'ter', terrace:'ter', cir:'cir', circle:'cir', pkwy:'pkwy', pky:'pkwy', parkway:'pkwy',
+    hwy:'hwy', hiway:'hwy', highway:'hwy', trl:'trl', trail:'trl', way:'way', sq:'sq', square:'sq',
+    expy:'expy', expwy:'expy', expressway:'expy', tpke:'tpke', turnpike:'tpke', rte:'rte', rt:'rte', route:'rte',
+    plz:'plz', plaza:'plz', pt:'pt', point:'pt', hts:'hts', heights:'hts', aly:'aly', alley:'aly',
+    loop:'loop', path:'path', pike:'pike'
+  };
+  const DIRECTIONS = {
+    n:'n', s:'s', e:'e', w:'w', ne:'ne', nw:'nw', se:'se', sw:'sw',
+    north:'n', south:'s', east:'e', west:'w',
+    northeast:'ne', northwest:'nw', southeast:'se', southwest:'sw'
+  };
+  const UNIT_WORDS = new Set(['apt','apartment','unit','suite','ste','bldg','building','rm','room','#']);
+  const US_STATES = {
+    alabama:'al', alaska:'ak', arizona:'az', arkansas:'ar', california:'ca', colorado:'co', connecticut:'ct',
+    delaware:'de', 'district of columbia':'dc', florida:'fl', georgia:'ga', hawaii:'hi', idaho:'id', illinois:'il',
+    indiana:'in', iowa:'ia', kansas:'ks', kentucky:'ky', louisiana:'la', maine:'me', maryland:'md',
+    massachusetts:'ma', michigan:'mi', minnesota:'mn', mississippi:'ms', missouri:'mo', montana:'mt',
+    nebraska:'ne', nevada:'nv', 'new hampshire':'nh', 'new jersey':'nj', 'new mexico':'nm', 'new york':'ny',
+    'north carolina':'nc', 'north dakota':'nd', ohio:'oh', oklahoma:'ok', oregon:'or', pennsylvania:'pa',
+    'rhode island':'ri', 'south carolina':'sc', 'south dakota':'sd', tennessee:'tn', texas:'tx', utah:'ut',
+    vermont:'vt', virginia:'va', washington:'wa', 'west virginia':'wv', wisconsin:'wi', wyoming:'wy'
+  };
+  const STATE_CODES = new Set(Object.values(US_STATES));
+  const CITY_WORDS = { ft:'fort', mt:'mount', st:'saint' };
+  const parsedAddressCache = new Map();
+
+  // Pulls an optional trailing ZIP and state off a token list.
+  function takeZipAndState(tokens){
+    const out = { zip:'', state:'', rest: tokens.slice() };
+    const r = out.rest;
+    if(r.length && /^\d{5}$/.test(r[r.length - 1])) out.zip = r.pop();
+    if(r.length >= 2 && US_STATES[r.slice(-2).join(' ')]){ out.state = US_STATES[r.slice(-2).join(' ')]; r.length -= 2; }
+    else if(r.length && US_STATES[r[r.length - 1]]){ out.state = US_STATES[r[r.length - 1]]; r.pop(); }
+    else if(r.length && r[r.length - 1].length === 2 && STATE_CODES.has(r[r.length - 1])){ out.state = r.pop(); }
+    return out;
   }
-  function groupLabel(o){
-    return (o.delivery ? o.address : o.company).trim().replace(/\s+/g, ' ');
+
+  function parseAddress(raw){
+    const key = String(raw || '');
+    if(parsedAddressCache.has(key)) return parsedAddressCache.get(key);
+    let t = key.toLowerCase()
+      .replace(/(\d{5})-\d{4}\b/g, '$1')       // ZIP+4 -> ZIP
+      .replace(/\bu\.\s?s\./g, 'us')           // "U.S." -> "us"
+      .replace(/&/g, ' and ')
+      .replace(/#/g, ' # ')
+      .replace(/[^a-z0-9#\s]/g, ' ');
+    let tokens = [];
+    t.split(/\s+/).filter(Boolean).forEach(tok => {
+      const ord = tok.match(/^(\d+)(st|nd|rd|th)$/);     // 50th -> 50
+      if(ord){
+        tokens.push(ord[1]);
+        // "123st" can't be an ordinal (that would be 123rd) — the writer meant "123 st" (street)
+        const n = parseInt(ord[1], 10);
+        if(ord[2] === 'st' && !(n % 10 === 1 && n % 100 !== 11)) tokens.push('st');
+        return;
+      }
+      tokens.push(DIRECTIONS[tok] || tok);                 // northwest -> nw
+    });
+    // "n w 50" (typed as N.W.) -> "nw"
+    const merged = [];
+    for(let i = 0; i < tokens.length; i++){
+      if((tokens[i] === 'n' || tokens[i] === 's') && (tokens[i + 1] === 'e' || tokens[i + 1] === 'w') && /^\d/.test(tokens[i + 2] || '')){
+        merged.push(tokens[i] + tokens[i + 1]); i++;
+      } else merged.push(tokens[i]);
+    }
+    tokens = merged.filter((tok, i, arr) => !((tok === 'th' || tok === 'nd' || tok === 'rd') && /^\d+$/.test(arr[i - 1] || '')));
+
+    const hasNumber = /^\d/.test(tokens[0] || '');
+    const DIRS = new Set(Object.values(DIRECTIONS));
+    // Numbered streets ("NW 123", "SW 8", "5") : the street name is the number itself, so the
+    // street ends there, or at the street type right after it if one was typed. This is what lets
+    // "7102 NW 123st", "7102 NW 123th St" and "7102 NW 123 St Miami" read as the same street.
+    let numIdx = -1;
+    if(hasNumber && DIRS.has(tokens[1]) && /^\d+$/.test(tokens[2] || '')) numIdx = 2;
+    else if(hasNumber && /^\d+$/.test(tokens[1] || '')) numIdx = 1;
+
+    let coreEnd = -1, hasType = false;
+    if(numIdx > 0){
+      if(STREET_TYPES[tokens[numIdx + 1]]){ coreEnd = numIdx + 1; hasType = true; }
+      else coreEnd = numIdx;
+    } else {
+      const from = (hasNumber ? 1 : 0) + 1;      // at least one name word between number and street type
+      for(let i = from; i < tokens.length; i++){
+        if(STREET_TYPES[tokens[i]]){ coreEnd = i; hasType = true; break; }
+      }
+    }
+
+    let core, coreNoType, tail;
+    if(coreEnd === -1){
+      tail = takeZipAndState(tokens);
+      const words = tail.rest.slice();
+      if(words.length > 1 && STREET_TYPES[words[words.length - 1]]){
+        words[words.length - 1] = STREET_TYPES[words[words.length - 1]];
+        core = words.join(' ');
+        coreNoType = words.slice(0, -1).join(' ');
+        hasType = true;
+      } else {
+        core = coreNoType = words.join(' ');
+      }
+      tail.rest = [];
+    } else {
+      const coreTokens = tokens.slice(0, coreEnd + 1);
+      let next = coreEnd + 1;
+      if(hasType) coreTokens[coreEnd] = STREET_TYPES[tokens[coreEnd]];
+      // "US Hwy 27" / "Rte 9": the number is part of the street name
+      if(hasType && (coreTokens[coreEnd] === 'hwy' || coreTokens[coreEnd] === 'rte') && /^\d+$/.test(tokens[next] || '')){
+        coreTokens.push(tokens[next]); next++;
+      }
+      core = coreTokens.join(' ');
+      coreNoType = hasType ? coreTokens.filter((_, i) => i !== coreEnd).join(' ') : core;
+      // Whatever follows: drop suite/apt/unit, then ZIP, state and city
+      const after = [];
+      const rest = tokens.slice(next);
+      for(let i = 0; i < rest.length; i++){
+        if(UNIT_WORDS.has(rest[i])){ i++; continue; }
+        after.push(rest[i]);
+      }
+      tail = takeZipAndState(after);
+    }
+    const city = tail.rest.map(w => CITY_WORDS[w] || w).join(' ');
+    const parsed = { core, coreNoType, hasType, zip: tail.zip, state: tail.state, city };
+    parsedAddressCache.set(key, parsed);
+    return parsed;
+  }
+
+  function addressesMatch(a, b){
+    if(!cleanText(a) || !cleanText(b)) return false;
+    const pa = parseAddress(a), pb = parseAddress(b);
+    if(!pa.core || !pb.core) return false;
+    // Same street line — or, if one of them was typed without a street type (st/ave/…), the same
+    // street apart from that missing word.
+    const sameStreet = pa.core === pb.core ||
+      ((!pa.hasType || !pb.hasType) && pa.coreNoType === pb.coreNoType);
+    if(!sameStreet) return false;
+    for(const part of ['zip', 'state', 'city']){
+      if(pa[part] && pb[part] && pa[part] !== pb[part]) return false;
+    }
+    return true;
+  }
+
+  // ---------- Consistent capitalisation for display ----------
+  // Display only: what people typed is stored exactly as entered; cards, group headings and the
+  // Completed list just show it in UPPER CASE, so "pallets of Tile", "Pallets Of Tile" and
+  // "PALLETS OF TILE" all read "PALLETS OF TILE". Extra spaces are tidied too (notes keep their line breaks).
+  function displayText(raw, kind){
+    if(raw == null) return '';
+    const str = String(raw).trim();
+    if(!str) return '';
+    return (kind === 'note' ? str : str.replace(/\s+/g, ' ')).toUpperCase();
+  }
+
+  function groupKeys(o){
+    const keys = [];
+    if(o.delivery){
+      const cargo = normKey(o.company);
+      if(cargo) keys.push('c:' + cargo);   // addresses are matched separately (addressesMatch)
+    } else {
+      const person = normKey(o.company);
+      if(person) keys.push('p:' + person);
+    }
+    return keys;
+  }
+
+  // Heading for a group: the thing its orders have in common.
+  function groupLabelFor(members){
+    const first = members[0];
+    if(!first.delivery) return { icon: '👤', text: displayText(first.company, 'name') };
+    const sharedByAll = (get) => {
+      const v = normKey(get(first));
+      return !!v && members.every(m => normKey(get(m)) === v);
+    };
+    const addrAll = !!cleanText(first.address) && members.every(m => addressesMatch(m.address, first.address));
+    const cargoAll = sharedByAll(m => m.company);
+    if(addrAll && cargoAll) return { icon: '📦', text: displayText(first.company, 'name') + '  ·  📍 ' + displayText(first.address, 'address') };
+    if(addrAll) return { icon: '📍', text: displayText(first.address, 'address') };
+    if(cargoAll) return { icon: '📦', text: displayText(first.company, 'name') };
+    // Linked in a chain (A shares an address with B, B shares cargo with C): name the most common value.
+    const tally = (get) => {
+      const counts = new Map();
+      members.forEach(m => { const k = normKey(get(m)); if(k) counts.set(k, (counts.get(k) || 0) + 1); });
+      let best = null, bestN = 0;
+      counts.forEach((n, k) => { if(n > bestN){ best = k; bestN = n; } });
+      return { key: best, n: bestN };
+    };
+    const cargo = tally(m => m.company);
+    let addrBest = null, addrN = 0;
+    members.forEach(m => {
+      if(!cleanText(m.address)) return;
+      const n = members.filter(x => addressesMatch(x.address, m.address)).length;
+      if(n > addrN){ addrBest = m; addrN = n; }
+    });
+    if(cargo.n > addrN){
+      return { icon: '📦', text: displayText(members.find(m => normKey(m.company) === cargo.key).company, 'name') };
+    }
+    return { icon: '📍', text: displayText(addrBest ? addrBest.address : first.address, 'address') };
   }
 
   function groupOrdersForDisplay(orders){
-    const seen = new Set();
-    const items = [];
-    for(const order of orders){
-      if(seen.has(order.id)) continue;
-      const key = groupKey(order);
-      if(key){
-        const members = orders.filter(o => groupKey(o) === key);
-        if(members.length > 1){
-          members.forEach(m => seen.add(m.id));
-          items.push({ type: 'group', company: groupLabel(order), members });
-          continue;
-        }
+    // Link orders that share any key (union-find over their positions in the list).
+    const parent = orders.map((_, i) => i);
+    const find = (i) => { while(parent[i] !== i){ parent[i] = parent[parent[i]]; i = parent[i]; } return i; };
+    const firstWithKey = new Map();
+    orders.forEach((o, i) => {
+      groupKeys(o).forEach(k => {
+        if(firstWithKey.has(k)) parent[find(i)] = find(firstWithKey.get(k));
+        else firstWithKey.set(k, i);
+      });
+    });
+    // Deliveries whose addresses are the same place (however they were typed) join the same group.
+    const withAddress = [];
+    orders.forEach((o, i) => { if(o.delivery && cleanText(o.address)) withAddress.push(i); });
+    for(let x = 0; x < withAddress.length; x++){
+      for(let y = x + 1; y < withAddress.length; y++){
+        const a = withAddress[x], b = withAddress[y];
+        if(find(a) !== find(b) && addressesMatch(orders[a].address, orders[b].address)) parent[find(b)] = find(a);
       }
-      seen.add(order.id);
-      items.push({ type: 'single', order });
     }
+    const membersByRoot = new Map();
+    orders.forEach((o, i) => {
+      const r = find(i);
+      if(!membersByRoot.has(r)) membersByRoot.set(r, []);
+      membersByRoot.get(r).push(o);
+    });
+
+    const items = [];
+    const emitted = new Set();
+    orders.forEach((order, i) => {
+      const r = find(i);
+      if(emitted.has(r)) return;
+      emitted.add(r);
+      const members = membersByRoot.get(r);
+      if(members.length > 1){
+        const label = groupLabelFor(members);
+        items.push({ type: 'group', icon: label.icon, label: label.text, members });
+      } else {
+        items.push({ type: 'single', order });
+      }
+    });
     return items;
   }
 
-  function customerGroupHtml(company, members){
+  function customerGroupHtml(icon, label, members){
     return (
       '<div class="customer-group">' +
         '<div class="customer-group-head">' +
-          '<span class="customer-group-icon">' + (members[0].delivery ? '📍' : '👤') + '</span>' +
-          '<span class="customer-group-name">' + escapeHtml(company) + '</span>' +
+          '<span class="customer-group-icon">' + icon + '</span>' +
+          '<span class="customer-group-name">' + escapeHtml(label) + '</span>' +
           '<span class="customer-group-count">' + members.length + ' orders</span>' +
         '</div>' +
         '<div class="customer-group-cards">' +
@@ -2956,7 +3182,7 @@
 
   function boardItemsHtml(orders){
     return groupOrdersForDisplay(orders).map(item =>
-      item.type === 'group' ? customerGroupHtml(item.company, item.members) : cardHtml(item.order, 'board')
+      item.type === 'group' ? customerGroupHtml(item.icon, item.label, item.members) : cardHtml(item.order, 'board')
     ).join('');
   }
 
