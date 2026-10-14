@@ -197,6 +197,47 @@
     letter-spacing: 0.03em;
   }
   .field input[type=time]{ color-scheme: dark; min-height: 49px; }
+  /* "Before" time picker (--:-- AM) with automatic AM/PM */
+  .tp{
+    display:flex; align-items:center; gap:2px; width:100%; min-height:49px;
+    background: var(--bg); border:1px solid var(--border); border-radius:6px;
+    padding:0 14px; color: var(--text-primary);
+    font-family: var(--font-mono); font-size:18px; letter-spacing:0.03em;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .tp:focus-within{ border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal-dim); }
+  .field .tp input.tp-h, .field .tp input.tp-m,
+  .card-edit .field .tp input.tp-h, .card-edit .field .tp input.tp-m,
+  .field .tp input.tp-h:focus, .field .tp input.tp-m:focus,
+  .card-edit .field .tp input.tp-h:focus, .card-edit .field .tp input.tp-m:focus{
+    width:2.1ch; padding:0; border:0; border-radius:0; background:transparent; box-shadow:none; outline:none;
+    color:inherit; font:inherit; letter-spacing:inherit; text-align:center;
+  }
+  .tp input::placeholder{ color: var(--text-faint); }
+  .tp-colon{ color: var(--text-muted); }
+  .tp-ap{
+    margin-left:8px; background:transparent; border:1px solid var(--border); border-radius:5px;
+    color: var(--amber); font:inherit; font-size:.8em; padding:3px 9px; cursor:pointer;
+  }
+  .tp-ap:hover, .tp-ap:focus-visible{ border-color: var(--amber); outline:none; }
+  .card-edit .field .tp{ min-height:0; padding:7px 11px; font-size:16px; }
+  /* Multiple invoices on one order */
+  .invoice-row{ display:flex; gap:8px; align-items:stretch; }
+  .invoice-row input{ flex:1 1 auto; min-width:0; }
+  .invoice-extra-row{ margin-top:8px; }
+  .invoice-add-btn, .invoice-remove-btn{
+    flex:0 0 49px; background: var(--bg); border:1px solid var(--border); border-radius:6px;
+    color: var(--teal); font-size:26px; line-height:1; cursor:pointer; font-family: var(--font-body);
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .invoice-add-btn:hover, .invoice-add-btn:focus-visible{ border-color: var(--teal); background: var(--teal-dim); outline:none; }
+  .invoice-remove-btn{ font-size:16px; color: var(--text-muted); }
+  .invoice-remove-btn:hover, .invoice-remove-btn:focus-visible{ border-color: var(--red); color: var(--red); outline:none; }
+  .invoice-group{ display:flex; flex-wrap:wrap; gap:4px 6px; min-width:0; margin-bottom:3px; }
+  .invoice-group .invoice-no{
+    margin:0; font-size:15px; padding:0 8px; border:1px solid var(--border); border-radius:5px;
+    background: var(--bg);
+  }
   .field textarea{ resize: vertical; min-height: 72px; line-height:1.5; }
   .field input:focus, .field textarea:focus{
     outline:none;
@@ -564,7 +605,7 @@
   }
   .completed-table .cell-invoice{ display:flex; align-items:center; justify-content:center; gap:10px; white-space:nowrap; }
   .completed-table .cell-invoice .invoice-no{
-    font-size: 15px; margin:0; height:auto; -webkit-line-clamp: initial; display:inline; white-space:nowrap;
+    font-size: 15px; margin:0; height:auto; -webkit-line-clamp: initial; display:inline; white-space:normal; overflow:visible; text-overflow:clip;
   }
   .completed-table .type-badge{
     display:inline-flex;
@@ -697,15 +738,15 @@
     .card.arrived{ animation: none; box-shadow: 0 0 0 2px var(--gold-dim); }
   }
 
-  /* Fixed-height info block (room for 3 lines: company, then pick up person /
-     freight with the deadline on the right, then the delivery address) so every card is the same size
-     whether or not those lines are present. */
+  /* Info block sizes to the lines that are actually present (company, pick up person /
+     freight with the deadline on the right, delivery address), so cards with fewer
+     lines are shorter instead of leaving empty space. */
   .card-info{
     display:flex; flex-direction:column; gap:3px;
-    height: 54px;
     margin: -4px 0 7px 0;
     overflow:hidden;
   }
+  .card-info:empty{ margin:0; }
   .card-company, .card-info-row{
     flex: 0 0 16px;
     font-size: 12px; line-height: 16px; font-weight: 600;
@@ -1004,6 +1045,7 @@
   .modal-sub{ margin: 0 0 16px 0; font-size: 13px; color: var(--text-muted); line-height:1.5; }
 
   .proof-preview-wrap{
+    position: relative;
     background: var(--surface);
     border: 1px dashed var(--border);
     border-radius: 10px;
@@ -1017,6 +1059,17 @@
     color: var(--text-faint); font-size: 13px;
   }
   .proof-placeholder-icon{ font-size: 26px; opacity:.6; }
+  /* Only shown when the order already has a stored proof photo */
+  .proof-delete-btn{
+    position:absolute; top:8px; right:8px; z-index:2;
+    background: rgba(10,12,16,.82); color: var(--red); border:1px solid var(--red);
+    border-radius:6px; padding:6px 11px; font-size:12px; font-weight:600; cursor:pointer;
+    font-family: var(--font-body);
+    transition: background .15s ease, color .15s ease;
+  }
+  .proof-delete-btn:hover, .proof-delete-btn:focus-visible{ background: var(--red); color:#fff; outline:none; }
+  .proof-delete-btn.armed{ background: var(--red); color:#fff; }
+  .proof-delete-btn:disabled{ opacity:.6; cursor:default; }
   .proof-preview-img{ width:100%; max-height: 320px; object-fit: contain; display:block; }
 
   .camera-view{ margin-bottom: 12px; }
@@ -1133,7 +1186,11 @@
         <div class="ticket-body">
           <div class="field" id="field-invoice">
             <label for="invoice">Invoice number</label>
-            <input type="text" id="invoice" name="invoice" inputmode="numeric" pattern="[0-9]*" placeholder="e.g. 10492" autocomplete="off">
+            <div class="invoice-row">
+              <input type="text" id="invoice" name="invoice" inputmode="numeric" pattern="[0-9]*" placeholder="e.g. 10492" autocomplete="off">
+              <button type="button" class="invoice-add-btn" id="invoice-add" aria-label="Add another invoice to this order" title="Add another invoice to this order">+</button>
+            </div>
+            <div id="invoice-extra"></div>
             <p class="hint" id="invoice-hint">Enter an invoice number to submit this order.</p>
           </div>
           <div class="field">
@@ -1315,6 +1372,7 @@
         <span>No photo selected</span>
       </div>
       <img class="proof-preview-img" id="proof-preview-img" alt="Proof photo" style="display:none;">
+      <button type="button" class="proof-delete-btn" id="proof-delete-btn" style="display:none;" aria-label="Delete the stored proof photo">🗑 Delete photo</button>
     </div>
 
     <div class="camera-view" id="camera-view" style="display:none;">
@@ -1409,6 +1467,17 @@
     }
     return mapRow(data);
   }
+  async function dbInsertOrders(rows){
+    const { data, error } = await db.from('orders').insert(rows).select();
+    if(error){
+      console.error(error);
+      showToast(error.code === '23505'
+        ? 'One of these invoice numbers already exists'
+        : 'Could not save the orders to the database');
+      return null;
+    }
+    return data.map(mapRow);
+  }
   async function dbUpdateOrder(id, fields){
     const { error } = await db.from('orders').update(fields).eq('id', id);
     if(error){
@@ -1431,6 +1500,26 @@
     return true;
   }
 
+  // Orders created together (several invoices in one submission) arrive as separate realtime
+  // events; announce them once — one sound, one toast — instead of once per card.
+  let insertBurst = [];
+  let insertBurstTimer = null;
+  function ordersSentToastHtml(batch){
+    const tags = batch.map(o => '<span class="invoice-no">' + escapeHtml(o.invoice) + '</span>').join(' ');
+    return (batch.length > 1 ? 'Orders ' : 'Order ') + tags + ' sent to ' + (batch[0].delivery ? 'delivery' : 'pickup') + ' dispatch';
+  }
+  function announceNewOrder(order){
+    insertBurst.push(order);
+    clearTimeout(insertBurstTimer);
+    insertBurstTimer = setTimeout(() => {
+      const batch = insertBurst;
+      insertBurst = [];
+      if(currentTab === 'board') playNotification(batch.some(o => o.urgent));
+      showToast(ordersSentToastHtml(batch));
+      flashBoardTab();
+    }, 250);
+  }
+
   function subscribeRealtime(){
     db.channel('orders-changes')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
@@ -1446,9 +1535,7 @@
         pending.unshift(order);
         sortPending();
         renderBoard(order.id);
-        if(currentTab === 'board') playNotification(order.urgent);
-        showToast('Order <span class="invoice-no">' + escapeHtml(order.invoice) + '</span> sent to ' + (order.delivery ? 'delivery' : 'pickup') + ' dispatch');
-        flashBoardTab();
+        announceNewOrder(order);
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
         const order = mapRow(payload.new);
@@ -1509,6 +1596,51 @@
     if(['Backspace','Delete','Tab','Escape','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key)) return;
     if(!/^[0-9]$/.test(e.key)) e.preventDefault();
   });
+
+  // ---- More than one invoice on the same pick up / delivery ----
+  // The "+" next to the invoice box adds another invoice box. Everything else on the form
+  // (company, person / freight, address, note, urgent, paid) is shared by all of them.
+  const invoiceExtra = document.getElementById('invoice-extra');
+  const invoiceAddBtn = document.getElementById('invoice-add');
+  const MAX_INVOICES = 10;
+  function allInvoiceInputs(){ return [invoiceInput].concat(Array.from(invoiceExtra.querySelectorAll('input'))); }
+  function getInvoiceValues(){ return allInvoiceInputs().map(i => i.value.trim()).filter(Boolean); }
+  function resetInvoiceExtras(){ invoiceExtra.innerHTML = ''; }
+  function bindInvoiceInput(inp){
+    inp.addEventListener('input', () => {
+      invoiceField.classList.remove('error');
+      invoiceHint.textContent = INVOICE_HINT_DEFAULT;
+      const digitsOnly = inp.value.replace(/[^0-9]/g, '');
+      if(digitsOnly !== inp.value) inp.value = digitsOnly;
+    });
+    inp.addEventListener('keydown', function(e){
+      if(e.key === 'Enter'){ e.preventDefault(); submitOrder(); return; }
+      if(e.ctrlKey || e.metaKey || e.altKey) return;
+      if(['Backspace','Delete','Tab','Escape','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key)) return;
+      if(!/^[0-9]$/.test(e.key)) e.preventDefault();
+    });
+  }
+  function addInvoiceRow(){
+    const inputs = allInvoiceInputs();
+    const last = inputs[inputs.length - 1];
+    if(!last.value.trim()){ last.focus(); return; }   // don't stack up empty boxes
+    if(inputs.length >= MAX_INVOICES){ showToast('Up to ' + MAX_INVOICES + ' invoices per order'); return; }
+    const row = document.createElement('div');
+    row.className = 'invoice-row invoice-extra-row';
+    row.innerHTML =
+      '<input type="text" class="invoice-extra-input" inputmode="numeric" pattern="[0-9]*" placeholder="Another invoice" autocomplete="off" aria-label="Additional invoice number">' +
+      '<button type="button" class="invoice-remove-btn" aria-label="Remove this invoice" title="Remove">✕</button>';
+    invoiceExtra.appendChild(row);
+    const inp = row.querySelector('input');
+    bindInvoiceInput(inp);
+    row.querySelector('button').addEventListener('click', () => {
+      row.remove();
+      invoiceField.classList.remove('error');
+      invoiceHint.textContent = INVOICE_HINT_DEFAULT;
+    });
+    inp.focus();
+  }
+  invoiceAddBtn.addEventListener('click', addInvoiceRow);
   const companyLabel = document.getElementById('company-label');
   const companyInput = document.getElementById('company');
   const companyNameInput = document.getElementById('company-name');
@@ -1715,34 +1847,40 @@
   });
 
   async function submitOrder(){
-    const invoice = invoiceInput.value.trim();
-    if(!invoice){
+    const invoices = getInvoiceValues();
+    function flagInvoice(hint, toastHtml, focusEl){
       invoiceField.classList.add('error');
       invoiceField.classList.remove('shake');
       void invoiceField.offsetWidth;
       invoiceField.classList.add('shake');
-      invoiceHint.textContent = INVOICE_HINT_DEFAULT;
-      invoiceInput.focus();
-      invoiceInput.scrollIntoView({ behavior:'smooth', block:'center' });
-      showToast('Enter an invoice number before sending to dispatch');
+      invoiceHint.textContent = hint;
+      focusEl.focus();
+      focusEl.scrollIntoView({ behavior:'smooth', block:'center' });
+      showToast(toastHtml);
+    }
+    if(!invoices.length){
+      flagInvoice(INVOICE_HINT_DEFAULT, 'Enter an invoice number before sending to dispatch', invoiceInput);
       return;
     }
-    if(invoiceExists(invoice, null)){
-      invoiceField.classList.add('error');
-      invoiceField.classList.remove('shake');
-      void invoiceField.offsetWidth;
-      invoiceField.classList.add('shake');
-      invoiceHint.textContent = 'Invoice ' + invoice + ' already exists — use a different number.';
-      invoiceInput.focus();
-      invoiceInput.scrollIntoView({ behavior:'smooth', block:'center' });
-      showToast('Invoice <span class="invoice-no">' + escapeHtml(invoice) + '</span> already exists');
+    const inputFor = (v) => allInvoiceInputs().find(i => i.value.trim() === v) || invoiceInput;
+    const repeated = invoices.find((v, i) => invoices.indexOf(v) !== i);
+    if(repeated !== undefined){
+      flagInvoice('Invoice ' + repeated + ' is entered more than once.',
+        'Invoice <span class="invoice-no">' + escapeHtml(repeated) + '</span> is entered more than once', inputFor(repeated));
+      return;
+    }
+    const taken = invoices.find(v => invoiceExists(v, null));
+    if(taken !== undefined){
+      flagInvoice('Invoice ' + taken + ' already exists — use a different number.',
+        'Invoice <span class="invoice-no">' + escapeHtml(taken) + '</span> already exists', inputFor(taken));
       return;
     }
     invoiceField.classList.remove('error');
     invoiceHint.textContent = INVOICE_HINT_DEFAULT;
 
-    const fields = {
-      invoice: invoice,
+    // Every invoice becomes its own order (its own card) carrying the same details
+    // that were filled in for this submission.
+    const shared = {
       company: companyInput.value.trim(),
       company_name: companyNameInput.value.trim(),
       address: deliveryInput.checked ? addressInput.value.trim() : '',
@@ -1752,34 +1890,42 @@
       urgent_by: urgentInput.checked ? (urgentTimeInput.value || null) : null,
       paid: paidInput.checked,
     };
+    // Explicit timestamps keep the cards in the order the invoices were entered
+    // (first invoice on top), since newest-first sorting would otherwise flip them.
+    const baseTime = Date.now();
+    const rows = invoices.map((inv, i) => Object.assign({}, shared, {
+      invoice: inv,
+      created_at: new Date(baseTime - i).toISOString(),
+    }));
 
     submitBtn.disabled = true;
 
     if(db){
-      const inserted = await dbInsertOrder(Object.assign({}, fields, { status: 'pending' }));
+      const inserted = await dbInsertOrders(rows.map(r => Object.assign({}, r, { status: 'pending' })));
       submitBtn.disabled = false;
-      if(!inserted) return; // dbInsertOrder already showed an error toast
-      // The realtime INSERT event (received by this tab too) adds it to pending[],
-      // renders the card, plays the notification, and shows the confirmation toast.
+      if(!inserted) return; // dbInsertOrders already showed an error toast
+      // The realtime INSERT events (received by this tab too) add the cards to pending[],
+      // render them, play the notification once, and show the confirmation toast.
     } else {
-      const order = Object.assign(
-        { id: nextId++, createdAt: new Date(), completedAt: null, arrived: false },
-        fields,
-        { companyName: fields.company_name, urgentBy: fields.urgent_by }
-      );
-      pending.unshift(order);
+      const created = rows.map(r => Object.assign(
+        { id: nextId++, completedAt: null, arrived: false },
+        r,
+        { createdAt: new Date(r.created_at), companyName: r.company_name, urgentBy: r.urgent_by }
+      ));
+      created.forEach(o => pending.unshift(o));
       sortPending();
-      renderBoard(order.id);
+      renderBoard(created[0].id);
       if(currentTab === 'board'){
-        playNotification(order.urgent);
+        playNotification(created.some(o => o.urgent));
       }
-      showToast('Order <span class="invoice-no">' + escapeHtml(order.invoice) + '</span> sent to ' + (order.delivery ? 'delivery' : 'pickup') + ' dispatch');
+      showToast(ordersSentToastHtml(created));
       flashBoardTab();
       submitBtn.disabled = false;
     }
 
     // reset form
     invoiceInput.value = '';
+    resetInvoiceExtras();
     companyInput.value = '';
     companyNameInput.value = '';
     addressInput.value = '';
@@ -1947,6 +2093,7 @@
   const proofCancelBtn = document.getElementById('proof-cancel-btn');
   const proofLaterBtn = document.getElementById('proof-later-btn');
   const proofSaveBtn = document.getElementById('proof-save-btn');
+  const proofDeleteBtn = document.getElementById('proof-delete-btn');
   const proofModalCloseBtn = document.getElementById('proof-modal-close');
 
   // Photos are stored in this Supabase Storage bucket (see schema.sql for the
@@ -1957,6 +2104,22 @@
   let proofModalOrderId = null;
   let proofModalContext = 'new'; // 'new' (Mark Complete flow) | 'later' (add proof to a completed order) | 'view' (viewing/replacing an existing photo)
   let proofSelectedImage = null; // the resized/compressed photo as a data: URL, set once the user picks a new file this session
+  let proofStoredImage = null;   // the photo already saved on this order when the modal opened (null if there is none)
+  let proofDeleteArmTimer = null;
+
+  // The Delete button exists only while the preview is showing a photo that is already stored
+  // on the order. With no stored photo — or once a new, not-yet-saved photo has been picked —
+  // it stays hidden.
+  function disarmProofDelete(){
+    clearTimeout(proofDeleteArmTimer);
+    proofDeleteBtn.classList.remove('armed');
+    proofDeleteBtn.textContent = '🗑 Delete photo';
+  }
+  function refreshProofDeleteBtn(){
+    const show = !!proofStoredImage && (!proofSelectedImage || proofSelectedImage === proofStoredImage);
+    proofDeleteBtn.style.display = show ? '' : 'none';
+    if(!show) disarmProofDelete();
+  }
 
   function resetProofPreview(){
     proofSelectedImage = null;
@@ -1964,21 +2127,25 @@
     proofPreviewImg.src = '';
     proofPreviewPlaceholder.style.display = 'flex';
     proofSaveBtn.disabled = true;
+    refreshProofDeleteBtn();
   }
 
   function showProofPreview(dataUrl){
     proofPreviewImg.src = dataUrl;
     proofPreviewImg.style.display = 'block';
     proofPreviewPlaceholder.style.display = 'none';
+    refreshProofDeleteBtn();
   }
 
   function showProofModal(){
+    refreshProofDeleteBtn();
     proofModalOverlay.classList.add('show');
   }
 
   function closeProofModal(){
     proofModalOverlay.classList.remove('show');
     proofModalOrderId = null;
+    proofStoredImage = null;
     resetProofPreview();
     stopCameraStream();
     hideCameraNote();
@@ -1993,6 +2160,7 @@
     if(!order) return;
     proofModalOrderId = id;
     proofModalContext = 'new';
+    proofStoredImage = order.proofImage || null;
     resetProofPreview();
     proofModalTitle.textContent = 'Proof of Completion';
     proofSaveBtn.textContent = 'Complete';
@@ -2000,7 +2168,7 @@
     if(order.proofImage){
       // This order already has a photo attached (most likely it was returned to
       // dispatch after being completed once) — offer to keep it as-is or replace it.
-      proofModalSub.textContent = 'This order already has a proof photo attached. Complete to keep it, or choose a new photo to replace it.';
+      proofModalSub.textContent = 'This order already has a proof photo attached. Complete to keep it, choose a new photo to replace it, or delete it.';
       proofSelectedImage = order.proofImage;
       showProofPreview(order.proofImage);
       proofSaveBtn.disabled = false;
@@ -2017,6 +2185,7 @@
     if(!order) return;
     proofModalOrderId = id;
     proofModalContext = 'later';
+    proofStoredImage = null;
     resetProofPreview();
     proofModalTitle.textContent = 'Proof of Completion';
     proofModalSub.textContent = 'Attach a photo for this completed order.';
@@ -2030,9 +2199,10 @@
     if(!order || !order.proofImage) return;
     proofModalOrderId = id;
     proofModalContext = 'view';
+    proofStoredImage = order.proofImage;
     resetProofPreview();
     proofModalTitle.textContent = 'Proof of Completion';
-    proofModalSub.textContent = 'Uploaded proof photo for this order. Choose a new photo to replace it.';
+    proofModalSub.textContent = 'Uploaded proof photo for this order. Choose a new photo to replace it, or delete it.';
     proofSaveBtn.textContent = 'Replace Photo';
     proofLaterBtn.style.display = 'none';
     showProofPreview(order.proofImage);
@@ -2316,6 +2486,33 @@
     }
   }
 
+  // Two taps to delete: the first arms the button, the second (within 3 seconds) deletes.
+  proofDeleteBtn.addEventListener('click', async () => {
+    if(proofModalOrderId == null || !proofStoredImage) return;
+    if(!proofDeleteBtn.classList.contains('armed')){
+      proofDeleteBtn.classList.add('armed');
+      proofDeleteBtn.textContent = 'Tap again to delete';
+      proofDeleteArmTimer = setTimeout(disarmProofDelete, 3000);
+      return;
+    }
+    const id = proofModalOrderId;
+    const context = proofModalContext;
+    proofDeleteBtn.disabled = true;
+    const ok = await deleteStoredProof(id);
+    proofDeleteBtn.disabled = false;
+    disarmProofDelete();
+    if(!ok) return;
+    if(context === 'view'){
+      closeProofModal();
+    } else {
+      // A returned order that is being completed again: stay open, now with no photo attached.
+      proofStoredImage = null;
+      resetProofPreview();
+      proofModalSub.textContent = 'Attach a photo before completing this order, or upload one later from the Completed list.';
+      proofLaterBtn.style.display = '';
+    }
+  });
+
   proofCancelBtn.addEventListener('click', closeProofModal);
   proofModalCloseBtn.addEventListener('click', closeProofModal);
   proofModalOverlay.addEventListener('click', (e) => {
@@ -2393,6 +2590,104 @@
     return d.toLocaleDateString([], {month:'2-digit', day:'2-digit', year:'2-digit'}) +
       ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
   }
+  // ---------- "Before" time picker with automatic AM/PM ----------
+  // Looks like the usual  --:-- AM  field, but AM/PM updates the moment the hour is typed:
+  // 8–11 → AM, 12 and 1–7 → PM. Tapping AM/PM (or typing a / p) overrides it.
+  // The original <input type="time"> stays in the page (hidden) as the value store, so the rest
+  // of the app keeps reading and writing "HH:MM" exactly as before.
+  const nativeValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+  const BEFORE_SEL = 'input#urgent-time, input.edit-urgent-time';
+
+  function enhanceTimeInput(el){
+    if(el.dataset.tp) return;
+    el.dataset.tp = '1';
+    const wrap = document.createElement('div');
+    wrap.className = 'tp';
+    wrap.innerHTML =
+      '<input type="tel" class="tp-h" inputmode="numeric" maxlength="2" placeholder="--" aria-label="Hour" autocomplete="off">' +
+      '<span class="tp-colon">:</span>' +
+      '<input type="tel" class="tp-m" inputmode="numeric" maxlength="2" placeholder="--" aria-label="Minute" autocomplete="off">' +
+      '<button type="button" class="tp-ap" aria-label="AM or PM">AM</button>';
+    el.style.display = 'none';
+    el.insertAdjacentElement('afterend', wrap);
+    const h = wrap.querySelector('.tp-h'), m = wrap.querySelector('.tp-m'), ap = wrap.querySelector('.tp-ap');
+    let manual = false; // true once AM/PM was chosen by hand (or the time was loaded), so it isn't auto-switched
+    const pad = (n) => String(n).padStart(2, '0');
+
+    function compute(){
+      const hr = parseInt(h.value, 10);
+      if(!(hr >= 1 && hr <= 12)){ nativeValue.set.call(el, ''); return; }
+      let mi = m.value === '' ? 0 : parseInt(m.value, 10);
+      if(!(mi >= 0 && mi <= 59)) mi = 0;
+      let h24 = hr % 12;
+      if(ap.textContent === 'PM') h24 += 12;
+      nativeValue.set.call(el, pad(h24) + ':' + pad(mi));
+    }
+    function fire(){
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    function sync(){
+      const v = nativeValue.get.call(el);
+      if(!v){ h.value = ''; m.value = ''; ap.textContent = 'AM'; manual = false; return; }
+      const parts = v.split(':');
+      const hr = parseInt(parts[0], 10);
+      h.value = String(hr % 12 === 0 ? 12 : hr % 12);
+      m.value = (parts[1] || '00').slice(0, 2);
+      ap.textContent = hr >= 12 ? 'PM' : 'AM';
+      manual = true;
+    }
+    // Code elsewhere sets el.value (e.g. clearing it) — keep the visible picker in step.
+    Object.defineProperty(el, 'value', {
+      configurable: true,
+      get(){ return nativeValue.get.call(el); },
+      set(v){ nativeValue.set.call(el, v); sync(); },
+    });
+    sync();
+
+    function setAP(label){ ap.textContent = label; manual = true; compute(); fire(); }
+
+    h.addEventListener('input', () => {
+      h.value = h.value.replace(/\D/g, '').slice(0, 2);
+      let hr = parseInt(h.value, 10);
+      if(h.value.length === 2 && hr === 0){ h.value = '12'; hr = 12; ap.textContent = 'AM'; manual = true; }
+      else if(hr >= 13 && hr <= 23){ h.value = String(hr - 12); hr = hr - 12; ap.textContent = 'PM'; manual = true; }
+      else if(hr > 23){ m.value = h.value[1]; h.value = h.value[0]; hr = parseInt(h.value, 10); }
+      if(!manual && hr >= 1 && hr <= 12) ap.textContent = (hr >= 8 && hr <= 11) ? 'AM' : 'PM';
+      compute(); fire();
+      const done = h.value.length === 2 || (h.value !== '' && parseInt(h.value, 10) >= 2);
+      if(done){ m.focus(); m.select(); }
+    });
+    h.addEventListener('keydown', (e) => {
+      if(e.key === ':' || e.key === ' '){ e.preventDefault(); if(h.value){ m.focus(); m.select(); } }
+    });
+    m.addEventListener('input', () => {
+      m.value = m.value.replace(/\D/g, '').slice(0, 2);
+      if(m.value.length === 1 && parseInt(m.value, 10) >= 6) m.value = '0' + m.value;
+      if(parseInt(m.value, 10) > 59) m.value = '59';
+      compute(); fire();
+      if(m.value.length === 2) ap.focus();
+    });
+    m.addEventListener('blur', () => { if(m.value.length === 1){ m.value = '0' + m.value; compute(); fire(); } });
+    m.addEventListener('keydown', (e) => {
+      if(e.key === 'Backspace' && m.value === ''){ e.preventDefault(); h.focus(); }
+    });
+    [h, m].forEach(inp => inp.addEventListener('keydown', (e) => {
+      const k = e.key.toLowerCase();
+      if(k === 'a' || k === 'p'){ e.preventDefault(); setAP(k === 'a' ? 'AM' : 'PM'); }
+    }));
+    ap.addEventListener('click', () => setAP(ap.textContent === 'AM' ? 'PM' : 'AM'));
+  }
+  function enhanceTimeInputsIn(root){
+    if(root.matches && root.matches(BEFORE_SEL)) enhanceTimeInput(root);
+    if(root.querySelectorAll) root.querySelectorAll(BEFORE_SEL).forEach(enhanceTimeInput);
+  }
+  enhanceTimeInputsIn(document);
+  // Edit forms are created later, when a card is opened for editing.
+  new MutationObserver((muts) => {
+    muts.forEach(mu => mu.addedNodes.forEach(n => { if(n.nodeType === 1) enhanceTimeInputsIn(n); }));
+  }).observe(document.body, { childList: true, subtree: true });
+
   // Formats an "HH:MM" (24h, from <input type="time">) value as a friendly local time.
   function formatUrgentTime(hhmm){
     if(!hhmm) return '';
@@ -2406,10 +2701,12 @@
   }
   // Invoice numbers must be unique across both Pick up/Delivery and Completed.
   // excludeId lets an order being edited compare against everything except itself.
+  // An order can carry several invoices, stored in one text column as "10492, 10493".
+  function splitInvoices(str){ return String(str || '').split(/[\s,;]+/).filter(Boolean); }
   function invoiceExists(invoice, excludeId){
     const normalized = invoice.trim();
-    return pending.some(o => o.id !== excludeId && o.invoice === normalized) ||
-      completed.some(o => o.id !== excludeId && o.invoice === normalized);
+    const has = (o) => o.id !== excludeId && splitInvoices(o.invoice).includes(normalized);
+    return pending.some(has) || completed.some(has);
   }
 
   function escapeHtml(str){
@@ -2425,7 +2722,7 @@
     const pickupChecked = !order.delivery;
     return (
       '<div class="card-edit">' +
-        '<div class="field"><input type="text" class="edit-invoice" inputmode="numeric" pattern="[0-9]*" value="' + escapeAttr(order.invoice) + '" placeholder="Invoice number"></div>' +
+        '<div class="field"><input type="text" class="edit-invoice" inputmode="text" value="' + escapeAttr(order.invoice) + '" placeholder="Invoice number"></div>' +
         '<div class="field"><input type="text" class="edit-company-name" value="' + escapeAttr(order.companyName || '') + '" placeholder="Company name (optional)"></div>' +
         '<div class="field"><input type="text" class="edit-company" value="' + escapeAttr(order.company || '') + '" placeholder="' + (order.delivery ? 'Freight / Cargo' : 'Pick up person name') + '"></div>' +
         '<div class="field edit-address-field" style="' + (order.delivery ? '' : 'display:none;') + '"><input type="text" class="edit-address" value="' + escapeAttr(order.address || '') + '" placeholder="Delivery address"></div>' +
@@ -2517,23 +2814,35 @@
       : 'Done · ' + formatTime(order.completedAt);
 
     const arrivedClass = (mode === 'board' && order.arrived) ? ' arrived' : '';
+    const invoiceNums = splitInvoices(order.invoice);
+    const invoiceHtml = invoiceNums.length > 1
+      ? '<div class="invoice-group">' + invoiceNums.map(n => '<div class="invoice-no">' + escapeHtml(n) + '</div>').join('') + '</div>'
+      : '<div class="invoice-no">' + escapeHtml(order.invoice) + '</div>';
+    const beforeHtml = (order.urgent && order.urgentBy)
+      ? '<span class="card-urgent-before">⏰ Before ' + escapeHtml(formatUrgentTime(order.urgentBy)) + '</span>'
+      : '';
+    // Info lines in display order. The "Before" time always sits at the right end of the
+    // top line that appears (company name, else freight/pick-up name, else delivery address),
+    // so it lines up with whatever is shown first.
+    const infoLines = [];
+    if(order.companyName) infoLines.push('🏢 ' + order.companyName);
+    if(order.company) infoLines.push((order.delivery ? '📦 ' : '👤 ') + order.company);
+    if(order.delivery && order.address) infoLines.push('📍 ' + order.address);
+    if(!infoLines.length && beforeHtml) infoLines.push('');
+    const infoLinesHtml = infoLines.map((text, idx) =>
+      '<div class="card-info-row"><span class="card-info-who">' + escapeHtml(text) + '</span>' +
+      (idx === 0 ? beforeHtml : '') + '</div>'
+    ).join('');
 
     return (
       '<div class="card ' + typeClass + doneClass + arrivedClass + '" data-id="' + order.id + '">' +
         urgentStamp +
         '<div class="card-top">' +
-          '<div class="invoice-no">' + escapeHtml(order.invoice) + '</div>' +
+          invoiceHtml +
           '<div class="type-badge"><span class="dot"></span>' + typeLabel + '</div>' +
         '</div>' +
         '<div class="card-info">' +
-          (order.companyName ? '<div class="card-company">🏢 ' + escapeHtml(order.companyName) + '</div>' : '') +
-          ((order.company || (order.urgent && order.urgentBy))
-            ? '<div class="card-info-row">' +
-                '<span class="card-info-who">' + (order.company ? (order.delivery ? '📦 ' : '👤 ') + escapeHtml(order.company) : '') + '</span>' +
-                (order.urgent && order.urgentBy ? '<span class="card-urgent-before">⏰ Before ' + escapeHtml(formatUrgentTime(order.urgentBy)) + '</span>' : '') +
-              '</div>'
-            : '') +
-          (order.delivery && order.address ? '<div class="card-company">📍 ' + escapeHtml(order.address) + '</div>' : '') +
+          infoLinesHtml +
         '</div>' +
         '<div class="quick-actions">' +
           '<button type="button" class="paid-badge ' + (order.paid ? 'is-paid' : 'is-unpaid') + '" data-id="' + order.id + '" title="Tap to toggle paid status">' +
@@ -2723,13 +3032,13 @@
 
       if(invoiceEditInput){
         invoiceEditInput.addEventListener('input', () => {
-          const digitsOnly = invoiceEditInput.value.replace(/[^0-9]/g, '');
-          if(digitsOnly !== invoiceEditInput.value) invoiceEditInput.value = digitsOnly;
+          const cleaned = invoiceEditInput.value.replace(/[^0-9, ]/g, '');
+          if(cleaned !== invoiceEditInput.value) invoiceEditInput.value = cleaned;
         });
         invoiceEditInput.addEventListener('keydown', function(e){
           if(e.ctrlKey || e.metaKey || e.altKey) return;
           if(['Backspace','Delete','Tab','Escape','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key)) return;
-          if(!/^[0-9]$/.test(e.key)) e.preventDefault();
+          if(!/^[0-9,\s]$/.test(e.key)) e.preventDefault();
         });
       }
 
@@ -2956,6 +3265,28 @@
     showToast('Proof photo saved for <span class="invoice-no">' + escapeHtml(order.invoice) + '</span>');
   }
 
+  // Removes the stored proof photo from an order (database field + storage file).
+  // A completed order left without a photo goes back to showing the "proof needed" icon,
+  // so a new photo can be added later.
+  async function deleteStoredProof(id){
+    const inCompleted = completed.find(o => o.id === id);
+    const order = inCompleted || pending.find(o => o.id === id);
+    if(!order) return false;
+    const proofStillNeeded = !!inCompleted;
+    if(db){
+      const ok = await dbUpdateOrder(id, { proof_image: null, proof_pending: proofStillNeeded });
+      if(!ok) return false;
+      await deleteProofPhotoFile(id);
+      // realtime UPDATE event refreshes the card / row
+    } else {
+      order.proofImage = null;
+      order.proofPending = proofStillNeeded;
+      if(inCompleted) renderCompleted(); else renderBoard();
+    }
+    showToast('Proof photo deleted for <span class="invoice-no">' + escapeHtml(order.invoice) + '</span>');
+    return true;
+  }
+
   async function onReturnClick(e){
     const id = parseInt(e.currentTarget.dataset.id, 10);
     const order = completed.find(o => o.id === id);
@@ -3011,16 +3342,24 @@
     const card = boardGrid.querySelector('[data-id="' + id + '"]');
     if(!card) return;
 
-    const invoiceVal = card.querySelector('.edit-invoice').value.trim();
-    if(!invoiceVal){
+    const invoiceList = splitInvoices(card.querySelector('.edit-invoice').value);
+    if(!invoiceList.length){
       card.querySelector('.edit-invoice').focus();
       return;
     }
-    if(invoiceExists(invoiceVal, id)){
+    const repeatedInv = invoiceList.find((v, i) => invoiceList.indexOf(v) !== i);
+    if(repeatedInv !== undefined){
       card.querySelector('.edit-invoice').focus();
-      showToast('Invoice <span class="invoice-no">' + escapeHtml(invoiceVal) + '</span> already exists');
+      showToast('Invoice <span class="invoice-no">' + escapeHtml(repeatedInv) + '</span> is entered more than once');
       return;
     }
+    const takenInv = invoiceList.find(v => invoiceExists(v, id));
+    if(takenInv !== undefined){
+      card.querySelector('.edit-invoice').focus();
+      showToast('Invoice <span class="invoice-no">' + escapeHtml(takenInv) + '</span> already exists');
+      return;
+    }
+    const invoiceVal = invoiceList.join(', ');
     const companyVal = card.querySelector('.edit-company').value.trim();
     const companyNameVal = card.querySelector('.edit-company-name').value.trim();
     const noteVal = card.querySelector('.edit-note').value.trim();
