@@ -642,9 +642,54 @@
   .row-confirm span{ font-size:12.5px; color: var(--text-muted); font-weight:600; white-space:nowrap; }
   .row-confirm .cancel-btn, .row-confirm .confirm-delete-btn{ padding: 6px 12px; font-size:12px; height:30px; display:inline-flex; align-items:center; white-space:nowrap; }
   .completed-table .icon-btn{ width:32px; height:32px; }
+
+  /* Out for Delivery — list grouped by driver */
+  .out-table{ text-transform: uppercase; }
+  .out-table .cell-wrap{ white-space: normal; overflow-wrap: anywhere; }
+  .out-table .cell-invoice{ flex-wrap: wrap; row-gap:4px; }
+  .out-table .out-sub{ margin-top:3px; font-size:11px; color: var(--text-muted); letter-spacing:0.02em; }
+  .out-table .out-urgent{
+    font-family: var(--font-mono); font-size:10px; font-weight:700; letter-spacing:0.05em;
+    color: var(--red); border:1px solid var(--red); border-radius:4px; padding:1px 6px;
+  }
+  .out-table tbody tr.out-group-row,
+  .out-table tbody tr.out-group-row:hover{ background: var(--surface-raised); }
+  .out-table tbody tr.out-group-row td{
+    text-align:left; padding: 11px 16px; border-top: 1px solid var(--border);
+  }
+  .out-table tbody tr.out-group-row:first-child td{ border-top:none; }
+  .out-group-icon{ margin-right:10px; }
+  .out-group-name{ font-family: var(--font-display); font-size:17px; font-weight:700; letter-spacing:0.05em; color: var(--text-primary); }
+  .out-group-meta{ margin-left:12px; font-family: var(--font-mono); font-size:11.5px; letter-spacing:0.04em; color: var(--text-muted); }
+  .out-table .row-actions .complete-btn{ flex:none; padding: 6px 12px; font-size:12px; }
+  .out-table tbody tr.completed-row, #completed-grid tr.completed-row{ cursor:pointer; }
+  .out-table tbody tr.completed-row:focus-visible, #completed-grid tr.completed-row:focus-visible{ outline:2px solid var(--teal); outline-offset:-2px; }
+
+  /* Invoice detail window (Out for Delivery) */
+  .detail-modal{ max-width: 520px; text-transform: uppercase; }
+  .detail-title{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .detail-title .invoice-no{ font-size:22px; margin:0; }
+  .detail-list{ display:grid; grid-template-columns: 128px 1fr; gap: 12px 16px; margin: 16px 0 4px; }
+  .detail-list dt{ font-family: var(--font-mono); font-size:11px; letter-spacing:0.06em; color: var(--text-faint); padding-top:2px; }
+  .detail-list dd{ margin:0; font-size:14.5px; line-height:1.45; color: var(--text-primary); overflow-wrap:anywhere; }
+  .detail-list dd.is-empty{ color: var(--text-faint); }
+  .detail-note{
+    background: var(--bg); border:1px solid var(--border); border-radius:8px;
+    padding: 10px 12px; white-space: pre-wrap; line-height:1.5;
+  }
+  .detail-proof{ display:block; max-width:100%; max-height:170px; border-radius:8px; border:1px solid var(--border); cursor:zoom-in; }
+  .detail-flag{ font-family: var(--font-mono); font-size:11px; font-weight:700; letter-spacing:0.05em; border-radius:4px; padding:2px 7px; border:1px solid; }
+  .detail-flag.urgent{ color: var(--red); border-color: var(--red); }
+  .detail-flag.paid{ color: var(--green); border-color: var(--green); }
+  .detail-flag.unpaid{ color: var(--amber); border-color: var(--amber); }
+  @media (max-width: 480px){
+    .detail-list{ grid-template-columns: 1fr; gap: 2px 0; }
+    .detail-list dd{ margin-bottom: 10px; }
+  }
   @media (max-width: 760px){
     .completed-list-wrap{ overflow-x: auto; }
     .completed-table{ min-width: 740px; }
+    .out-table{ min-width: 940px; }
   }
 
   .card{
@@ -848,6 +893,20 @@
   }
   .complete-btn:hover{ filter: brightness(1.1); }
   .complete-btn:active{ transform: scale(0.96); }
+  /* "Out for Delivery" — the hover button on delivery tickets in Pick up / Delivery */
+  .out-btn{
+    flex:1;
+    background: var(--teal);
+    color: #041a1a;
+    border:none; border-radius: 7px;
+    padding: 8px 12px;
+    font-family: var(--font-display);
+    font-size: 13px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase;
+    transition: filter .15s ease, transform .1s ease;
+  }
+  .out-btn:hover{ filter: brightness(1.1); }
+  .out-btn:active{ transform: scale(0.96); }
+  .req-mark{ text-transform:none; letter-spacing:0; font-weight:400; color: var(--text-faint); }
 
   .icon-btn{
     flex-shrink:0;
@@ -863,6 +922,7 @@
   }
   .icon-btn:active{ transform: scale(0.94); }
   .icon-btn.edit-btn:hover{ border-color: var(--teal); color: var(--teal); background: var(--teal-dim); }
+  .icon-btn.back-btn:hover{ border-color: var(--amber); color: var(--amber); background: var(--amber-dim); }
   .icon-btn.return-btn:hover{ border-color: var(--amber); color: var(--amber); background: var(--amber-dim); }
   .icon-btn.delete-btn:hover{ border-color: var(--red); color: var(--red); background: var(--red-dim); }
 
@@ -1165,6 +1225,7 @@
     <nav class="tabs">
       <button class="tab active" data-tab="home">Home</button>
       <button class="tab" data-tab="board">Pick up / Delivery <span class="count" id="count-board">0</span></button>
+      <button class="tab" data-tab="out">Out for Delivery <span class="count" id="count-out">0</span></button>
       <button class="tab" data-tab="completed">Completed <span class="count" id="count-completed">0</span></button>
     </nav>
   </div>
@@ -1238,7 +1299,7 @@
   <section class="view" id="view-board">
     <div class="board-head">
       <h2>Pick up / Delivery</h2>
-      <span class="sub">Hover a ticket to mark it complete</span>
+      <span class="sub">Hover a ticket to mark it complete — deliveries go out with a driver first</span>
     </div>
 
     <div class="board-search-row" id="board-search-row">
@@ -1269,6 +1330,44 @@
       <div class="icon">◎</div>
       <p class="big">Dispatch is clear</p>
       <p>Submitted orders will appear here.</p>
+    </div>
+  </section>
+
+  <!-- OUT FOR DELIVERY -->
+  <section class="view" id="view-out">
+    <div class="board-head">
+      <h2>Out for Delivery</h2>
+      <span class="sub">Grouped by driver — mark each invoice delivered, or bring it back to dispatch</span>
+    </div>
+    <div class="completed-list-wrap out-list-wrap" id="out-list-wrap">
+      <table class="completed-table out-table">
+        <colgroup>
+          <col style="width:13%">
+          <col style="width:14%">
+          <col style="width:17%">
+          <col style="width:21%">
+          <col style="width:10%">
+          <col style="width:9%">
+          <col style="width:16%">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Invoice</th>
+            <th>Name</th>
+            <th>Freight / Cargo</th>
+            <th>Address</th>
+            <th>Paid</th>
+            <th>Out</th>
+            <th class="col-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="out-grid"></tbody>
+      </table>
+    </div>
+    <div class="empty-state" id="out-empty">
+      <div class="icon">🚚</div>
+      <p class="big">Nothing out for delivery</p>
+      <p>Deliveries sent out with a driver will appear here.</p>
     </div>
   </section>
 
@@ -1355,6 +1454,39 @@
   <span id="toast-text"></span>
 </div>
 
+<div class="modal-overlay" id="detail-modal-overlay">
+  <div class="modal detail-modal" role="dialog" aria-modal="true" aria-labelledby="detail-modal-title">
+    <div class="modal-header">
+      <div class="detail-title" id="detail-modal-title"></div>
+      <button type="button" class="modal-close-btn" id="detail-modal-close" aria-label="Close">✕</button>
+    </div>
+    <dl class="detail-list" id="detail-list"></dl>
+    <div class="proof-modal-actions" style="margin-top:18px;">
+      <button type="button" class="modal-btn modal-btn-ghost" id="detail-close-btn">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="out-modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Out for Delivery</h3>
+      <button type="button" class="modal-close-btn" id="out-modal-close" aria-label="Close">✕</button>
+    </div>
+    <p class="modal-sub" id="out-modal-sub"></p>
+    <div class="field" id="out-driver-field" style="margin-bottom:16px;">
+      <label for="out-driver-input">Driver name <span class="req-mark">(required)</span></label>
+      <input type="text" id="out-driver-input" list="out-driver-list" placeholder="e.g. Carlos" autocomplete="off" required>
+      <datalist id="out-driver-list"></datalist>
+      <p class="hint" id="out-driver-hint">Enter who is taking this delivery.</p>
+    </div>
+    <div class="proof-modal-actions">
+      <button type="button" class="modal-btn modal-btn-ghost" id="out-cancel-btn">Cancel</button>
+      <button type="button" class="modal-btn modal-btn-primary" id="out-confirm-btn">Send Out</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="proof-modal-overlay">
   <div class="modal proof-modal">
     <div class="modal-header">
@@ -1423,6 +1555,7 @@
   // kept in sync via realtime subscriptions. When it's not configured, this is
   // the only source of truth and resets on reload.
   let pending = [];
+  let outList = [];   // deliveries that have left with a driver (status 'out_for_delivery')
   let completed = [];
   let nextId = 1; // only used in local-only demo mode
 
@@ -1440,6 +1573,8 @@
       urgentBy: row.urgent_by || null,
       paid: !!row.paid,
       arrived: !!row.arrived,
+      driver: row.driver || '',
+      outAt: row.out_at ? new Date(row.out_at) : null,
       status: row.status,
       createdAt: new Date(row.created_at),
       completedAt: row.completed_at ? new Date(row.completed_at) : null,
@@ -1517,38 +1652,53 @@
     }, 250);
   }
 
+  function removeFromAllLists(id){
+    pending = pending.filter(o => o.id !== id);
+    outList = outList.filter(o => o.id !== id);
+    completed = completed.filter(o => o.id !== id);
+  }
+  function findOrder(id){
+    return pending.find(o => o.id === id) || outList.find(o => o.id === id) || completed.find(o => o.id === id);
+  }
+  function sortOut(){ outList.sort((a, b) => (b.outAt || 0) - (a.outAt || 0)); }
+  // Puts an order in the list that matches its status.
+  function placeOrder(order){
+    removeFromAllLists(order.id);
+    if(order.status === 'completed'){
+      completed.unshift(order);
+    } else if(order.status === 'out_for_delivery'){
+      outList.unshift(order);
+      sortOut();
+    } else {
+      pending.unshift(order);
+      sortPending();
+    }
+  }
+
   function subscribeRealtime(){
     db.channel('orders-changes')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
         const order = mapRow(payload.new);
-        if(order.status === 'completed'){
-          if(!completed.some(o => o.id === order.id)){
-            completed.unshift(order);
-            renderCompleted();
-          }
+        if(findOrder(order.id)) return;
+        if(order.status === 'completed' || order.status === 'out_for_delivery'){
+          placeOrder(order);
+          renderOut();
+          renderCompleted();
           return;
         }
-        if(pending.some(o => o.id === order.id)) return;
-        pending.unshift(order);
-        sortPending();
+        placeOrder(order);
         renderBoard(order.id);
         announceNewOrder(order);
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
         const order = mapRow(payload.new);
-        const previous = pending.find(o => o.id === order.id) || completed.find(o => o.id === order.id);
+        const previous = findOrder(order.id);
         const justArrived = order.arrived && (!previous || !previous.arrived);
         const justCleared = previous && previous.arrived && !order.arrived;
 
-        pending = pending.filter(o => o.id !== order.id);
-        completed = completed.filter(o => o.id !== order.id);
-        if(order.status === 'completed'){
-          completed.unshift(order);
-        } else {
-          pending.unshift(order);
-          sortPending();
-        }
+        placeOrder(order);
         renderBoard();
+        renderOut();
         renderCompleted();
 
         if(justArrived){
@@ -1559,10 +1709,9 @@
         }
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'orders' }, (payload) => {
-        const id = payload.old.id;
-        pending = pending.filter(o => o.id !== id);
-        completed = completed.filter(o => o.id !== id);
+        removeFromAllLists(payload.old.id);
         renderBoard();
+        renderOut();
         renderCompleted();
       })
       .subscribe();
@@ -1573,6 +1722,7 @@
   const views = {
     home: document.getElementById('view-home'),
     board: document.getElementById('view-board'),
+    out: document.getElementById('view-out'),
     completed: document.getElementById('view-completed'),
   };
   const orderTicket = document.getElementById('order-form');
@@ -1688,6 +1838,10 @@
 
   const countBoard = document.getElementById('count-board');
   const countCompleted = document.getElementById('count-completed');
+  const countOut = document.getElementById('count-out');
+  const outGrid = document.getElementById('out-grid');
+  const outEmpty = document.getElementById('out-empty');
+  const outListWrap = document.getElementById('out-list-wrap');
   const boardTab = document.querySelector('.tab[data-tab="board"]');
 
   const toast = document.getElementById('toast');
@@ -1941,10 +2095,18 @@
     boardTab.classList.add('flash');
   }
 
+  // Board order: a customer who has arrived ("Customer Here") stays first, then
+  //   1. urgent + paid   2. urgent + unpaid   3. paid   4. unpaid
+  // and within each of those, newest first.
+  function boardRank(o){
+    if(o.urgent) return o.paid ? 0 : 1;
+    return o.paid ? 2 : 3;
+  }
   function sortPending(){
     pending.sort((a,b) => {
       if(a.arrived !== b.arrived) return a.arrived ? -1 : 1;
-      if(a.urgent !== b.urgent) return a.urgent ? -1 : 1;
+      const rankDiff = boardRank(a) - boardRank(b);
+      if(rankDiff) return rankDiff;
       return b.createdAt - a.createdAt;
     });
   }
@@ -2153,7 +2315,7 @@
   }
 
   function openCompleteProofModal(id){
-    const order = pending.find(o => o.id === id);
+    const order = pending.find(o => o.id === id) || outList.find(o => o.id === id);
     if(!order) return;
     proofModalOrderId = id;
     proofModalContext = 'new';
@@ -2703,7 +2865,7 @@
   function invoiceExists(invoice, excludeId){
     const normalized = invoice.trim();
     const has = (o) => o.id !== excludeId && splitInvoices(o.invoice).includes(normalized);
-    return pending.some(has) || completed.some(has);
+    return pending.some(has) || outList.some(has) || completed.some(has);
   }
 
   function escapeHtml(str){
@@ -2784,7 +2946,9 @@
         overlay =
           '<div class="complete-overlay"><div class="btn-row">' +
             '<button class="icon-btn edit-btn" data-id="' + order.id + '" title="Edit order" aria-label="Edit order">✎</button>' +
-            '<button class="complete-btn" data-id="' + order.id + '">Mark Complete</button>' +
+            (order.delivery
+              ? '<button class="out-btn" data-id="' + order.id + '" title="Send out for delivery with a driver">Out for Delivery</button>'
+              : '<button class="complete-btn" data-id="' + order.id + '">Mark Complete</button>') +
             '<button class="icon-btn delete-btn" data-id="' + order.id + '" title="Delete order" aria-label="Delete order">🗑</button>' +
           '</div></div>';
       }
@@ -2884,7 +3048,7 @@
         );
 
     return (
-      '<tr class="completed-row" data-id="' + order.id + '">' +
+      '<tr class="completed-row" data-id="' + order.id + '" tabindex="0" title="Click for full details">' +
         '<td class="cell-invoice"><span class="invoice-no">' + escapeHtml(order.invoice) + '</span></td>' +
         '<td><span class="type-badge ' + typeClass + '"><span class="dot"></span>' + typeLabel + '</span></td>' +
         '<td class="cell-company" title="' + escapeAttr(displayText(order.companyName, 'name')) + '">' + companyHtml + '</td>' +
@@ -3148,6 +3312,12 @@
       membersByRoot.get(r).push(o);
     });
 
+    // Inside a group the unpaid orders sit at the bottom. (Array.sort is stable, so each half keeps
+    // the board order: urgent first, then newest.)
+    membersByRoot.forEach(members => {
+      if(members.length > 1) members.sort((a, b) => (a.paid ? 0 : 1) - (b.paid ? 0 : 1));
+    });
+
     const items = [];
     const emitted = new Set();
     orders.forEach((order, i) => {
@@ -3208,8 +3378,9 @@
   });
 
   function renderBoard(highlightId){
-    // sortPending() already orders arrived ("Customer Here") first, then urgent,
-    // then newest — filtering by type preserves that order within each section.
+    // sortPending() already orders arrived ("Customer Here") first, then urgent + paid,
+    // urgent + unpaid, paid, unpaid (newest first in each) — filtering by type preserves that
+    // order within each section.
     const matches = pending.filter(orderMatchesBoardSearch);
     const pickupOrders = matches.filter(o => !o.delivery);
     const deliveryOrders = matches.filter(o => o.delivery);
@@ -3235,6 +3406,7 @@
     countBoard.textContent = pending.length;
 
     boardGrid.querySelectorAll('.complete-btn').forEach(btn => btn.addEventListener('click', onCompleteClick));
+    boardGrid.querySelectorAll('.out-btn').forEach(btn => btn.addEventListener('click', onOutClick));
     boardGrid.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', onEditClick));
     boardGrid.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', onDeleteClick));
     boardGrid.querySelectorAll('.save-btn').forEach(btn => btn.addEventListener('click', onSaveClick));
@@ -3298,6 +3470,87 @@
       paidChk.addEventListener('change', () => paidPill.classList.toggle('checked', paidChk.checked));
       paidPill.addEventListener('click', (e) => { if(e.target === paidPill){ paidChk.checked = !paidChk.checked; paidPill.classList.toggle('checked', paidChk.checked); } });
     });
+  }
+
+  // One list, grouped under each driver's name so it is clear who has which invoices.
+  // Drivers are listed A–Z (names compared ignoring case); orders with no driver named go last.
+  function outGroupsByDriver(){
+    const groups = new Map();
+    outList.forEach(o => {
+      const key = normKey(o.driver);
+      if(!groups.has(key)) groups.set(key, { key, label: key ? displayText(o.driver, 'name') : 'No driver named', orders: [] });
+      groups.get(key).orders.push(o);
+    });
+    const list = Array.from(groups.values());
+    list.forEach(g => g.orders.sort((a, b) => (a.outAt || 0) - (b.outAt || 0)));   // earliest out first
+    list.sort((a, b) => ((a.key === '') - (b.key === '')) || a.label.localeCompare(b.label));
+    return list;
+  }
+
+  function outRowHtml(order){
+    const dash = '<span class="cell-empty">—</span>';
+    const urgentTag = order.urgent ? '<span class="out-urgent">Urgent</span>' : '';
+    const before = (order.urgent && order.urgentBy)
+      ? '<div class="out-sub">⏰ Before ' + escapeHtml(formatUrgentTime(order.urgentBy)) + '</div>' : '';
+    const noteLine = order.note
+      ? '<div class="out-sub" title="' + escapeAttr(displayText(order.note, 'note')) + '">' + escapeHtml(displayText(order.note, 'note')) + '</div>' : '';
+    const outTime = order.outAt || order.createdAt;
+
+    const actionsHtml = (order.id === confirmDeleteId)
+      ? (
+          '<div class="row-confirm">' +
+            '<span>Delete?</span>' +
+            '<button class="cancel-btn" data-id="' + order.id + '" data-action="cancel-delete">Cancel</button>' +
+            '<button class="confirm-delete-btn" data-id="' + order.id + '">Delete</button>' +
+          '</div>'
+        )
+      : (
+          '<div class="row-actions">' +
+            '<button type="button" class="icon-btn back-btn" data-id="' + order.id + '" title="Bring back to Pick up / Delivery" aria-label="Bring back to Pick up / Delivery">↩</button>' +
+            '<button type="button" class="complete-btn" data-id="' + order.id + '" title="Mark as delivered">Complete</button>' +
+            '<button type="button" class="icon-btn delete-btn" data-id="' + order.id + '" title="Delete order" aria-label="Delete order">🗑</button>' +
+          '</div>'
+        );
+
+    return (
+      '<tr class="completed-row" data-id="' + order.id + '" tabindex="0" title="Click for full details">' +
+        '<td class="cell-invoice"><span class="invoice-no">' + escapeHtml(order.invoice) + '</span>' + urgentTag + '</td>' +
+        '<td class="cell-wrap">' + (order.companyName ? escapeHtml(displayText(order.companyName, 'name')) : dash) + '</td>' +
+        '<td class="cell-wrap">' + (order.company ? escapeHtml(displayText(order.company, 'name')) : dash) + before + noteLine + '</td>' +
+        '<td class="cell-wrap">' + (order.address ? escapeHtml(displayText(order.address, 'address')) : dash) + '</td>' +
+        '<td>' +
+          '<button type="button" class="paid-badge ' + (order.paid ? 'is-paid' : 'is-unpaid') + '" data-id="' + order.id + '" title="Tap to toggle paid status">' +
+            '<span class="dot"></span>' + (order.paid ? 'Paid' : 'Unpaid') +
+          '</button>' +
+        '</td>' +
+        '<td class="cell-time" title="' + escapeAttr(formatTime(outTime)) + '">' + formatTimeCompact(outTime) + '</td>' +
+        '<td class="col-actions">' + actionsHtml + '</td>' +
+      '</tr>'
+    );
+  }
+
+  function renderOut(){
+    outGrid.innerHTML = outGroupsByDriver().map(g => {
+      const unpaid = g.orders.filter(o => !o.paid).length;
+      const meta = g.orders.length + (g.orders.length === 1 ? ' invoice' : ' invoices') + (unpaid ? ' · ' + unpaid + ' unpaid' : '');
+      return (
+        '<tr class="out-group-row"><td colspan="7">' +
+          '<span class="out-group-icon">🚚</span>' +
+          '<span class="out-group-name">' + escapeHtml(g.label) + '</span>' +
+          '<span class="out-group-meta">' + escapeHtml(meta) + '</span>' +
+        '</td></tr>' +
+        g.orders.map(outRowHtml).join('')
+      );
+    }).join('');
+    outListWrap.style.display = outList.length ? '' : 'none';
+    outEmpty.style.display = outList.length ? 'none' : 'block';
+    countOut.textContent = outList.length;
+    outGrid.querySelectorAll('.complete-btn').forEach(btn => btn.addEventListener('click', onCompleteClick));
+    outGrid.querySelectorAll('.back-btn').forEach(btn => btn.addEventListener('click', onBackToDispatchClick));
+    outGrid.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', onDeleteClick));
+    outGrid.querySelectorAll('.confirm-delete-btn').forEach(btn => btn.addEventListener('click', onConfirmDeleteClick));
+    outGrid.querySelectorAll('.cancel-btn').forEach(btn => btn.addEventListener('click', onCancelClick));
+    outGrid.querySelectorAll('.paid-badge').forEach(btn => btn.addEventListener('click', onTogglePaidClick));
   }
 
   function getFilteredCompleted(){
@@ -3385,7 +3638,7 @@
 
   async function onTogglePaidClick(e){
     const id = parseInt(e.currentTarget.dataset.id, 10);
-    const order = pending.find(o => o.id === id) || completed.find(o => o.id === id);
+    const order = findOrder(id);
     if(!order) return;
     const newPaid = !order.paid;
 
@@ -3397,7 +3650,9 @@
     }
 
     order.paid = newPaid;
+    sortPending();
     renderBoard();
+    renderOut();
     renderCompleted();
   }
 
@@ -3429,17 +3684,207 @@
 
   function onCompleteClick(e){
     const id = parseInt(e.currentTarget.dataset.id, 10);
-    const idx = pending.findIndex(o => o.id === id);
-    if(idx === -1) return;
+    if(!pending.some(o => o.id === id) && !outList.some(o => o.id === id)) return;
     openCompleteProofModal(id);
+  }
+
+  // ---------- Out for Delivery ----------
+  // A delivery ticket's hover button asks for the driver's name, then moves the order to the
+  // Out for Delivery tab (status 'out_for_delivery'). From there it is completed as usual.
+  const outModalOverlay = document.getElementById('out-modal-overlay');
+  const outModalSub = document.getElementById('out-modal-sub');
+  const outDriverInput = document.getElementById('out-driver-input');
+  const outDriverList = document.getElementById('out-driver-list');
+  const outConfirmBtn = document.getElementById('out-confirm-btn');
+  let outModalOrderId = null;
+
+  function onOutClick(e){
+    openOutModal(parseInt(e.currentTarget.dataset.id, 10));
+  }
+  function openOutModal(id){
+    const order = pending.find(o => o.id === id);
+    if(!order) return;
+    outModalOrderId = id;
+    outModalSub.innerHTML = 'Order <span class="invoice-no">' + escapeHtml(order.invoice) + '</span> — who is taking this delivery?';
+    // Suggest drivers already used, so repeat names are one tap.
+    const seen = new Set(), names = [];
+    pending.concat(outList, completed).forEach(o => {
+      const n = (o.driver || '').trim(), k = n.toLowerCase();
+      if(n && !seen.has(k)){ seen.add(k); names.push(n); }
+    });
+    outDriverList.innerHTML = names.map(n => '<option value="' + escapeAttr(n) + '"></option>').join('');
+    outDriverInput.value = '';
+    clearOutDriverError();
+    outConfirmBtn.disabled = false;
+    outModalOverlay.classList.add('show');
+    setTimeout(() => outDriverInput.focus(), 50);
+  }
+  const outDriverField = document.getElementById('out-driver-field');
+  const outDriverHint = document.getElementById('out-driver-hint');
+  const OUT_DRIVER_HINT = 'Enter who is taking this delivery.';
+  function clearOutDriverError(){
+    outDriverField.classList.remove('error');
+    outDriverHint.textContent = OUT_DRIVER_HINT;
+  }
+  function closeOutModal(){
+    outModalOverlay.classList.remove('show');
+    outModalOrderId = null;
+  }
+  async function confirmOut(){
+    const id = outModalOrderId;
+    if(id == null) return;
+    const order = pending.find(o => o.id === id);
+    if(!order){ closeOutModal(); return; }
+    const driver = outDriverInput.value.trim();
+    // A delivery can't go out without knowing who has it.
+    if(!driver){
+      outDriverField.classList.add('error');
+      outDriverField.classList.remove('shake');
+      void outDriverField.offsetWidth;
+      outDriverField.classList.add('shake');
+      outDriverHint.textContent = 'Driver name is required to send this out.';
+      outDriverInput.focus();
+      return;
+    }
+    const outAt = new Date();
+    closeOutModal();
+    const card = boardGrid.querySelector('[data-id="' + id + '"]');
+    if(card) card.classList.add('completing');
+    const toastHtml = 'Order <span class="invoice-no">' + escapeHtml(order.invoice) + '</span> is out for delivery' +
+      ' with ' + escapeHtml(displayText(driver, 'name'));
+
+    if(db){
+      const ok = await dbUpdateOrder(id, { status: 'out_for_delivery', driver: driver, out_at: outAt.toISOString(), arrived: false });
+      if(!ok){ if(card) card.classList.remove('completing'); return; }
+      showToast(toastHtml);
+      // realtime UPDATE event moves it from pending[] to outList[] and re-renders
+      return;
+    }
+
+    showToast(toastHtml);
+    setTimeout(() => {
+      const idx = pending.findIndex(o => o.id === id);
+      if(idx === -1) return;
+      const moved = pending.splice(idx, 1)[0];
+      moved.status = 'out_for_delivery';
+      moved.driver = driver;
+      moved.outAt = outAt;
+      moved.arrived = false;
+      outList.unshift(moved);
+      sortOut();
+      renderBoard();
+      renderOut();
+    }, 340);
+  }
+  outConfirmBtn.addEventListener('click', confirmOut);
+  outDriverInput.addEventListener('input', clearOutDriverError);
+  document.getElementById('out-cancel-btn').addEventListener('click', closeOutModal);
+  document.getElementById('out-modal-close').addEventListener('click', closeOutModal);
+  outModalOverlay.addEventListener('click', (e) => { if(e.target === outModalOverlay) closeOutModal(); });
+  outDriverInput.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter'){ e.preventDefault(); confirmOut(); }
+    else if(e.key === 'Escape'){ closeOutModal(); }
+  });
+
+  // ---------- Invoice details (Out for Delivery and Completed) ----------
+  // Clicking a row (anywhere except its buttons) opens everything recorded for that invoice, notes included.
+  const detailOverlay = document.getElementById('detail-modal-overlay');
+  const detailTitle = document.getElementById('detail-modal-title');
+  const detailList = document.getElementById('detail-list');
+  function openOrderDetails(id){
+    const isOut = outList.some(x => x.id === id);
+    const o = outList.find(x => x.id === id) || completed.find(x => x.id === id);
+    if(!o) return;
+    const val = (v) => v ? escapeHtml(v) : '';
+    const rows = [];
+    rows.push(['Status', isOut ? 'Out for delivery' : 'Completed']);
+    if(o.delivery) rows.push(['Driver', o.driver ? escapeHtml(displayText(o.driver, 'name')) : '']);
+    rows.push(['Name', val(displayText(o.companyName, 'name'))]);
+    rows.push([o.delivery ? 'Freight / Cargo' : 'Pick up person', val(displayText(o.company, 'name'))]);
+    if(o.delivery) rows.push(['Address', val(displayText(o.address, 'address'))]);
+    rows.push(['Priority', o.urgent
+      ? '<span class="detail-flag urgent">Urgent</span>' + (o.urgentBy ? ' &nbsp;⏰ Before ' + escapeHtml(formatUrgentTime(o.urgentBy)) : '')
+      : 'Normal']);
+    rows.push(['Payment', '<span class="detail-flag ' + (o.paid ? 'paid' : 'unpaid') + '">' + (o.paid ? 'Paid' : 'Unpaid') + '</span>']);
+    rows.push(['Received', escapeHtml(formatTime(o.createdAt))]);
+    if(o.outAt) rows.push(['Sent out', escapeHtml(formatTime(o.outAt))]);
+    if(!isOut && o.completedAt) rows.push([o.delivery ? 'Delivered' : 'Picked up', escapeHtml(formatTime(o.completedAt))]);
+    if(!isOut){
+      rows.push(['Proof photo', o.proofImage
+        ? '<img class="detail-proof" src="' + escapeAttr(o.proofImage) + '" alt="Proof photo" data-id="' + o.id + '" title="Click to enlarge">'
+        : (o.proofPending ? 'Not uploaded yet' : '')]);
+    }
+    detailTitle.innerHTML = '<span class="invoice-no">' + escapeHtml(o.invoice) + '</span>' +
+      '<span class="type-badge ' + (o.delivery ? 'type-delivery' : 'type-pickup') + '"><span class="dot"></span>' + (o.delivery ? 'Delivery' : 'Pick up') + '</span>';
+    detailList.innerHTML = rows.map(r =>
+      '<dt>' + r[0] + '</dt><dd' + (r[1] ? '' : ' class="is-empty"') + '>' + (r[1] || '—') + '</dd>'
+    ).join('') +
+      '<dt>Notes</dt><dd>' + (o.note
+        ? '<div class="detail-note">' + escapeHtml(displayText(o.note, 'note')) + '</div>'
+        : '<span class="is-empty">No notes</span>') + '</dd>';
+    detailOverlay.classList.add('show');
+  }
+  function closeOrderDetails(){ detailOverlay.classList.remove('show'); }
+  [outGrid, completedGrid].forEach(grid => {
+    grid.addEventListener('click', (e) => {
+      if(e.target.closest('button, a, input')) return;      // the row's own buttons keep working
+      const row = e.target.closest('tr[data-id]');
+      if(row) openOrderDetails(parseInt(row.dataset.id, 10));
+    });
+    grid.addEventListener('keydown', (e) => {
+      if(e.key !== 'Enter' || e.target.closest('button, a, input')) return;
+      const row = e.target.closest('tr[data-id]');
+      if(row) openOrderDetails(parseInt(row.dataset.id, 10));
+    });
+  });
+  // The proof photo in the details opens the full-size viewer.
+  detailList.addEventListener('click', (e) => {
+    const img = e.target.closest('.detail-proof');
+    if(!img) return;
+    closeOrderDetails();
+    openViewProofModal(parseInt(img.dataset.id, 10));
+  });
+  document.getElementById('detail-modal-close').addEventListener('click', closeOrderDetails);
+  document.getElementById('detail-close-btn').addEventListener('click', closeOrderDetails);
+  detailOverlay.addEventListener('click', (e) => { if(e.target === detailOverlay) closeOrderDetails(); });
+  document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && detailOverlay.classList.contains('show')) closeOrderDetails(); });
+
+  // Brings an order back from Out for Delivery to the Pick up / Delivery board.
+  async function onBackToDispatchClick(e){
+    const id = parseInt(e.currentTarget.dataset.id, 10);
+    const order = outList.find(o => o.id === id);
+    if(!order) return;
+    const card = outGrid.querySelector('[data-id="' + id + '"]');
+    if(card) card.classList.add('completing');
+    const toastHtml = 'Order <span class="invoice-no">' + escapeHtml(order.invoice) + '</span> sent back to dispatch';
+
+    if(db){
+      const ok = await dbUpdateOrder(id, { status: 'pending', driver: '', out_at: null });
+      if(!ok){ if(card) card.classList.remove('completing'); return; }
+      showToast(toastHtml);
+      return;
+    }
+    showToast(toastHtml);
+    setTimeout(() => {
+      const idx = outList.findIndex(o => o.id === id);
+      if(idx === -1) return;
+      const back = outList.splice(idx, 1)[0];
+      back.status = 'pending';
+      back.driver = '';
+      back.outAt = null;
+      pending.unshift(back);
+      sortPending();
+      renderBoard();
+      renderOut();
+    }, 340);
   }
 
   // Actually marks an order complete, optionally attaching a proof photo (a data: URL)
   // or flagging that a photo will be added later from the Completed list.
   async function completeOrder(id, proofImage, proofPending){
-    const idx = pending.findIndex(o => o.id === id);
-    if(idx === -1) return;
-    const card = boardGrid.querySelector('[data-id="' + id + '"]');
+    const fromOut = outList.some(o => o.id === id);
+    if(!fromOut && !pending.some(o => o.id === id)) return;
+    const card = (fromOut ? outGrid : boardGrid).querySelector('[data-id="' + id + '"]');
     if(card) card.classList.add('completing');
     const completedAt = new Date();
     const storedProofImage = proofImage ? await uploadProofPhoto(id, proofImage) : null;
@@ -3458,15 +3903,18 @@
     }
 
     setTimeout(() => {
-      const stillIdx = pending.findIndex(o => o.id === id);
+      const sourceList = fromOut ? outList : pending;
+      const stillIdx = sourceList.findIndex(o => o.id === id);
       if(stillIdx === -1) return;
-      const order = pending.splice(stillIdx, 1)[0];
+      const order = sourceList.splice(stillIdx, 1)[0];
+      order.status = 'completed';
       order.completedAt = completedAt;
       order.arrived = false;
       order.proofImage = storedProofImage;
       order.proofPending = !!proofPending;
       completed.unshift(order);
       renderBoard();
+      renderOut();
       renderCompleted();
     }, 340);
   }
@@ -3496,7 +3944,7 @@
   // so a new photo can be added later.
   async function deleteStoredProof(id){
     const inCompleted = completed.find(o => o.id === id);
-    const order = inCompleted || pending.find(o => o.id === id);
+    const order = inCompleted || pending.find(o => o.id === id) || outList.find(o => o.id === id);
     if(!order) return false;
     const proofStillNeeded = !!inCompleted;
     if(db){
@@ -3507,7 +3955,7 @@
     } else {
       order.proofImage = null;
       order.proofPending = proofStillNeeded;
-      if(inCompleted) renderCompleted(); else renderBoard();
+      if(inCompleted) renderCompleted(); else { renderBoard(); renderOut(); }
     }
     showToast('Proof photo deleted for <span class="invoice-no">' + escapeHtml(order.invoice) + '</span>');
     return true;
@@ -3558,6 +4006,7 @@
       editingId = null;
     }
     renderBoard();
+    renderOut();
     renderCompleted();
   }
 
@@ -3623,10 +4072,11 @@
 
   function onDeleteClick(e){
     const id = parseInt(e.currentTarget.dataset.id, 10);
-    if(!pending.some(o => o.id === id) && !completed.some(o => o.id === id)) return;
+    if(!pending.some(o => o.id === id) && !outList.some(o => o.id === id) && !completed.some(o => o.id === id)) return;
     confirmDeleteId = id;
     editingId = null;
     renderBoard();
+    renderOut();
     renderCompleted();
   }
 
@@ -3634,10 +4084,10 @@
     const id = parseInt(e.currentTarget.dataset.id, 10);
     confirmDeleteId = null;
 
-    const order = pending.find(o => o.id === id) || completed.find(o => o.id === id);
+    const order = findOrder(id);
     if(!order) return;
 
-    const card = (pending.includes(order) ? boardGrid : completedGrid).querySelector('[data-id="' + id + '"]');
+    const card = (pending.includes(order) ? boardGrid : outList.includes(order) ? outGrid : completedGrid).querySelector('[data-id="' + id + '"]');
     if(card) card.classList.add('deleting');
 
     if(db){
@@ -3649,9 +4099,9 @@
     }
 
     setTimeout(() => {
-      pending = pending.filter(o => o.id !== id);
-      completed = completed.filter(o => o.id !== id);
+      removeFromAllLists(id);
       renderBoard();
+      renderOut();
       renderCompleted();
     }, 300);
   }
@@ -3692,17 +4142,21 @@
   if(db){
     dbFetchAll().then(rows => {
       if(rows){
-        pending = rows.filter(o => o.status !== 'completed');
+        pending = rows.filter(o => o.status !== 'completed' && o.status !== 'out_for_delivery');
+        outList = rows.filter(o => o.status === 'out_for_delivery');
         completed = rows.filter(o => o.status === 'completed');
         sortPending();
+        sortOut();
         completed.sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0));
       }
       renderBoard();
+      renderOut();
       renderCompleted();
     });
     subscribeRealtime();
   } else {
     renderBoard();
+    renderOut();
     renderCompleted();
   }
 })();
